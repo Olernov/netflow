@@ -1,4 +1,5 @@
 #pragma once
+#include "common.h"
 
 class CFileWriter;
 class CFileReader;
@@ -15,33 +16,33 @@ class CStatKeeper;
 	/* заголовок пакета NetFlow v9
 	 */
 	struct SNFv9Header {
-		WORD wVersion;
-		WORD wCount;
-		DWORD dwSysUpTime;
-		DWORD dwUnixSeconds;
-		DWORD dwSeqNumber;
-		DWORD dwSrcId;
+        uint16_t wVersion;
+        uint16_t wCount;
+        uint32_t dwSysUpTime;
+        uint32_t dwUnixSeconds;
+        uint32_t dwSeqNumber;
+        uint32_t dwSrcId;
 	};
 	/* заголовок записи NetFlow v9
 	 */
 	struct SNFv9FlowSet {
-		WORD m_wFlowSetID;
-		WORD m_wLength;
+        uint16_t m_wFlowSetID;
+        uint16_t m_wLength;
 	};
 	/* заголовок поля NetFlow v9
 	 */
 	struct SNFv9Field {
-		WORD m_wFieldType;
-		WORD m_wFieldSize;
-		DWORD m_dwOffset;
+        uint16_t m_wFieldType;
+        uint16_t m_wFieldSize;
+        uint32_t m_dwOffset;
 	};
 	/* заголовок шаблона NetFlow v9
 	 */
 	struct SNFv9Template {
-		WORD wTemplateID;
-		WORD wFieldCount;
-		WORD wDataSize;
-		BYTE *m_pmbMasterCopy;
+        uint16_t wTemplateID;
+        uint16_t wFieldCount;
+        uint16_t wDataSize;
+        uint8_t *m_pmbMasterCopy;
 		size_t m_stMasterCopySize;
 		SNFv9Field **m_mpsoField;
 	};
@@ -58,47 +59,47 @@ struct SOutputTemplate {
 class CNFParser
 {
 public:
-	BOOL Init(
+    bool Init(
 		CFileWriter *p_pcoFileWriter,
 		CFileReader *p_pcoFileReader,
 		CFilter *p_pcoFilter,
 		CStatKeeper *p_pcoStatKeeper,
-		DWORD p_dwFlags);
-	BOOL ReadNFPacket();
+        uint32_t p_dwFlags);
+    bool ReadNFPacket();
 public:
-	CNFParser (BOOL p_bCountPackets = FALSE);
+    CNFParser (bool p_bCountPackets = false);
 	~CNFParser(void);
 private:
-	DWORD ParseNFHeader(
-		BYTE *p_pmbBuf,
+    uint32_t ParseNFHeader(
+        uint8_t *p_pmbBuf,
 		int p_iPackLen,
 		SNFv9Header *p_psoNFv9Hdr);
 	// функция возвращает количество обработанных записей
-	DWORD ParseFlowSet (SNFv9Header *p_psoHeader);
+    uint32_t ParseFlowSet (SNFv9Header *p_psoHeader);
 	int ParseTemplateFlowSet(
 		SNFv9Header *p_psoHeader,
-		BYTE *p_pmbBuf,
+        uint8_t *p_pmbBuf,
 		size_t p_stDataSize);
 	void ParseDataFlowSet(
 		SNFv9Header *p_psoHeader,
 		SNFv9Template *p_psoTemplate,
-		BYTE *p_pmbBuf,
-		DWORD p_dwRecordCount);
+        uint8_t *p_pmbBuf,
+        uint32_t p_dwRecordCount);
 	void UnixTimeToStr(
-		DWORD p_dwUnixTime,
+        uint32_t p_dwUnixTime,
 		char *m_pmcOutputStr,
 		size_t p_stMaxChars);
 	void CopyBlock(
-		BYTE *p_pmbDst,
+        uint8_t *p_pmbDst,
 		size_t p_stDstSize,
-		BYTE *p_pmbSrc,
-		size_t p_stBytesToCopy);
+        uint8_t *p_pmbSrc,
+        size_t p_stuint8_tsToCopy);
 	void OutputHeader (SNFv9Header *p_psoHeader);
 	void OutputTemplate(
-		DWORD p_dwSrcId,
+        uint32_t p_dwSrcId,
 		SNFv9Template *p_psoTemplate);
 	void OutputData(
-		BYTE *p_pmbBuf,
+        uint8_t *p_pmbBuf,
 		SNFv9Template *p_psoTemplate,
 		SNFv9Header *p_psoHeader);
 private:
@@ -106,12 +107,12 @@ private:
 	CFileReader *m_pcoFileReader;
 	CFilter *m_pcoFilter;
 	CStatKeeper *m_pcoStatKeeper;
-	std::map<DWORD,DWORD> m_mapOPT;
-	std::map<ULONGLONG,SNFv9Template*> m_mapTemplates;
+    std::map<uint32_t,uint32_t> m_mapOPT;
+    std::map<uint64_t,SNFv9Template*> m_mapTemplates;
 	SOutputTemplate m_msoOPT[7];
-	BOOL m_bOutputHeader;
-	BOOL m_bOutputTemplate;
-	BOOL m_bUseOPT;
-	BOOL m_bCountPackets;
-	BOOL m_bDontOutputData;
+    bool m_bOutputHeader;
+    bool m_bOutputTemplate;
+    bool m_bUseOPT;
+    bool m_bCountPackets;
+    bool m_bDontOutputData;
 };

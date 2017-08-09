@@ -1,26 +1,24 @@
 #include "NFParser.h"
 #include "Filter.h"
+#include "main.h"
 
-BOOL CFilter::SetParameter(
-	DWORD p_dwParamId,
+bool CFilter::SetParameter(
+    uint32_t p_dwParamId,
 	void *p_pvParamVal,
-	DWORD p_dwValSize)
+    uint32_t p_dwValSize)
 {
-	void *pvValue = NULL;
-	DWORD dwValSize = 0;
+    void *pvValue = nullptr;
+    uint32_t dwValSize = 0;
 
 	if (! GetParam(
 		p_dwParamId,
 		&pvValue,
 		&dwValSize)) {
-			return FALSE;
+            return false;
 	}
 
-	if (pvValue
-		&& dwValSize) {
-			ZeroMemory(
-				pvValue,
-				dwValSize);
+    if (pvValue && dwValSize) {
+        memset(pvValue, 0, dwValSize);
 			dwValSize = dwValSize < p_dwValSize ?
 				dwValSize
 				: p_dwValSize;
@@ -30,26 +28,26 @@ BOOL CFilter::SetParameter(
 				dwValSize);
 	}
 	else {
-		return FALSE;
+        return false;
 	}
 
-	return TRUE;
+    return true;
 }
 
 
-BOOL CFilter::RowFilter(
+bool CFilter::RowFilter(
 	SNFv9Header *p_psoHeader,
 	SNFv9Template *p_psoTemplate,
-	BYTE *p_pmbBuf)
+    uint8_t *p_pmbBuf)
 {
-	DWORD dwValue;
-	WORD wValue;
+    uint32_t dwValue;
+    uint16_t wValue;
 	int iDelta;
-	DWORD dwSysUpTime;
-	DWORD dwFlowTime;
-	DWORD dwUnixTime;
+    uint32_t dwSysUpTime;
+    uint32_t dwFlowTime;
+    uint32_t dwUnixTime;
 
-	for (DWORD dwI = 0; dwI < p_psoTemplate->wFieldCount; ++dwI) {
+    for (uint32_t dwI = 0; dwI < p_psoTemplate->wFieldCount; ++dwI) {
 
 		dwValue = 0;
 		memcpy(
@@ -64,7 +62,7 @@ BOOL CFilter::RowFilter(
 					dwValue = ntohl (dwValue);
 					if ((dwValue & m_dwSrcMask) != (m_dwSrcIp & m_dwSrcMask)
 						|| dwValue < m_dwSrcIp) {
-							return FALSE;
+                            return false;
 					}
 				}
 				break;
@@ -73,7 +71,7 @@ BOOL CFilter::RowFilter(
 					dwValue = ntohl (dwValue);
 					if ((dwValue & m_dwDstMask) != (m_dwDstIp & m_dwDstMask)
 						|| dwValue < m_dwDstIp) {
-							return FALSE;
+                            return false;
 					}
 				}
 				break;
@@ -84,7 +82,7 @@ BOOL CFilter::RowFilter(
 					iDelta = (int)(dwFlowTime - dwSysUpTime)/1000;
 					dwUnixTime = p_psoHeader->dwUnixSeconds;
 					if (m_dwStartTime > dwUnixTime + iDelta) {
-						return FALSE;
+                        return false;
 					}
 				}
 				break;
@@ -95,25 +93,25 @@ BOOL CFilter::RowFilter(
 					iDelta = (int)(dwFlowTime - dwSysUpTime)/1000;
 					dwUnixTime = p_psoHeader->dwUnixSeconds;
 					if (m_dwStopTime < dwUnixTime + iDelta) {
-						return FALSE;
+                        return false;
 					}
 				}
 				break;
 			case IDS_L4_SRC_PORT:
-				if ((WORD)-1 != m_wSrcPort) {
-					wValue = (WORD)dwValue;
+                if ((uint16_t)-1 != m_wSrcPort) {
+                    wValue = (uint16_t)dwValue;
 					wValue = ntohs (wValue);
 					if (wValue != m_wSrcPort) {
-						return FALSE;
+                        return false;
 					}
 				}
 				break;
 			case IDS_L4_DST_PORT:
-				if ((WORD)-1 != m_wDstPort) {
-					wValue = (WORD)dwValue;
+                if ((uint16_t)-1 != m_wDstPort) {
+                    wValue = (uint16_t)dwValue;
 					wValue = ntohs (wValue);
 					if (wValue != m_wDstPort) {
-						return FALSE;
+                        return false;
 					}
 				}
 				break;
@@ -122,23 +120,23 @@ BOOL CFilter::RowFilter(
 		}
 	}
 
-	return TRUE;
+    return true;
 }
 
 
-BOOL CFilter::ParamFilter(
-	DWORD p_dwParamId,
+bool CFilter::ParamFilter(
+    uint32_t p_dwParamId,
 	void *p_pvParamVal,
-	DWORD p_dwValSize)
+    uint32_t p_dwValSize)
 {
-	void *pvParam = NULL;
-	DWORD dwValSize;
+    void *pvParam = nullptr;
+    uint32_t dwValSize;
 
 	if (! GetParam(
 		p_dwParamId,
 		&pvParam,
 		&dwValSize)) {
-			return TRUE;
+            return true;
 	}
 
 	if (pvParam
@@ -150,65 +148,59 @@ BOOL CFilter::ParamFilter(
 				pvParam,
 				p_pvParamVal,
 				dwValSize)) {
-					return TRUE;
+                    return true;
 			}
 	}
 
-	return FALSE;
+    return false;
 }
 
 
-BOOL CFilter::FileFilter (const char *p_pcszFileName)
+bool CFilter::FileFilter (const char *p_pcszFileName)
 {
 	int iFnRes;
-	DWORD dwRouterIp;
-	ULONGLONG ullFileTime;
-	DWORD dwFileTime;
+    uint32_t dwRouterIp;
+    uint64_t ullFileTime;
+    uint32_t dwFileTime;
 
-	iFnRes = sscanf_s(
+    iFnRes = sscanf(
 		p_pcszFileName,
 		"%x_%I64u",
 		&dwRouterIp,
 		&ullFileTime);
 	if (2 != iFnRes) {
-		return FALSE;
+        return false;
 	}
-	if ((ULONGLONG)20110400000000 <= ullFileTime) {
+    if ((uint64_t)20110400000000 <= ullFileTime) {
 		tm soTm;
-		// выдел€ем секунды
-		soTm.tm_sec = ullFileTime%100;
+        soTm.tm_sec = ullFileTime%100;
 		ullFileTime /= 100;
-		// выдел€ем минуты
-		soTm.tm_min = ullFileTime%100;
+        soTm.tm_min = ullFileTime%100;
 		ullFileTime /= 100;
-		// выдел€ем часы
-		soTm.tm_hour = ullFileTime%100;
+        soTm.tm_hour = ullFileTime%100;
 		ullFileTime /= 100;
-		// выдел€ем день мес€ца
-		soTm.tm_mday = ullFileTime%100;
+        soTm.tm_mday = ullFileTime%100;
 		ullFileTime /= 100;
-		// выдел€ем мес€ц
-		soTm.tm_mon = ullFileTime%100;
+        soTm.tm_mon = ullFileTime%100;
 		--soTm.tm_mon;
 		ullFileTime /= 100;
-		// должен был остатьс€ только год
-		soTm.tm_year = (int)ullFileTime;
+        soTm.tm_year = (int)ullFileTime;
 		soTm.tm_year -= 1900;
-		dwFileTime = (DWORD) mktime (&soTm);
+        dwFileTime = (uint32_t) mktime (&soTm);
 	}
 	else {
-		dwFileTime = (DWORD)ullFileTime;
+        dwFileTime = (uint32_t)ullFileTime;
 	}
 	if (m_dwStartTime != -1
 		&& m_dwStartTime > dwFileTime + 360) {
-		return FALSE;
+        return false;
 	}
 	if (m_dwStopTime != -1
 		&& m_dwStopTime < dwFileTime - 720) {
-		return FALSE;
+        return false;
 	}
 
-	return TRUE;
+    return true;
 }
 
 
@@ -230,10 +222,10 @@ CFilter::~CFilter(void)
 }
 
 
-BOOL CFilter::GetParam(
-	DWORD p_dwParamId,
+bool CFilter::GetParam(
+    uint32_t p_dwParamId,
 	void **p_pvParamVal,
-	DWORD *p_pdwValSize)
+    uint32_t *p_pdwValSize)
 {
 	switch (p_dwParamId) {
 	case IDS_FIRST_SWITCHED:
@@ -269,8 +261,8 @@ BOOL CFilter::GetParam(
 		*p_pdwValSize = sizeof(m_wDstPort);
 		break;
 	default:
-		return FALSE;
+        return false;
 	}
 
-	return TRUE;
+    return true;
 }

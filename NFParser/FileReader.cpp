@@ -1,21 +1,21 @@
 #include "FileReader.h"
 
+CFileReader::CFileReader(void)
+{
+    m_pmbData = nullptr;
+    m_stBufferSize = 0;
+    m_stReadChunkSize = 0;
+    m_stBufferedDataSize = 0;
+    m_stCurPos = 0;
+    m_hFile = nullptr;
+}
+
 int CFileReader::Init (size_t stReadChunkSize)
 {
 	m_stReadChunkSize = stReadChunkSize;
 	m_stBufferSize = m_stReadChunkSize * 2;
-	m_hMemHeap = HeapCreate(
-		0,
-		m_stBufferSize,
-		0);
-	if (NULL == m_hMemHeap) {
-		return -1;
-	}
-	m_pmbData = (BYTE*)HeapAlloc(
-		m_hMemHeap,
-		HEAP_NO_SERIALIZE,
-		m_stBufferSize);
-	if (NULL == m_pmbData) {
+    m_pmbData = (uint8_t*) malloc(m_stBufferSize);
+    if (m_pmbData == nullptr) {
 		return -1;
 	}
 
@@ -24,34 +24,19 @@ int CFileReader::Init (size_t stReadChunkSize)
 
 int CFileReader::OpenDataFile (SFileInfo * p_psoFileInfo)
 {
-	if (INVALID_HANDLE_VALUE != m_hFile) {
+    if (m_hFile != nullptr) {
 		return -1;
 	}
-	strcpy_s(
-		m_soFileInfo.m_mcDir,
-		sizeof(m_soFileInfo.m_mcDir)/sizeof(*m_soFileInfo.m_mcDir),
-		p_psoFileInfo->m_mcDir);
-	strcpy_s(
-		m_soFileInfo.m_mcFileName,
-		sizeof(m_soFileInfo.m_mcFileName)/sizeof(*m_soFileInfo.m_mcFileName),
-		p_psoFileInfo->m_mcFileName);
+    strncpy(m_soFileInfo.m_mcDir, p_psoFileInfo->m_mcDir, sizeof(m_soFileInfo.m_mcDir));
+    strncpy(m_soFileInfo.m_mcFileName, p_psoFileInfo->m_mcFileName, sizeof(m_soFileInfo.m_mcFileName));
 
-	std::string strFileName;
+    std::string strFileName(p_psoFileInfo->m_mcDir);
+    strFileName += "/";
+    strFileName += p_psoFileInfo->m_mcFileName;
 
-	strFileName = p_psoFileInfo->m_mcDir;
-	strFileName += "\\";
-	strFileName += p_psoFileInfo->m_mcFileName;
-
-	m_hFile = CreateFileA(
-		strFileName.c_str(),
-		GENERIC_READ,
-		FILE_SHARE_READ,
-		NULL,
-		OPEN_EXISTING,
-		0,
-		NULL);
-	if (INVALID_HANDLE_VALUE == m_hFile) {
-		return GetLastError();
+    m_hFile = fopen(strFileName.c_str(), "r");
+    if (m_hFile == nullptr) {
+        return errno;
 	}
 	else {
 		m_stBufferedDataSize = 0;
@@ -61,34 +46,35 @@ int CFileReader::OpenDataFile (SFileInfo * p_psoFileInfo)
 }
 
 size_t CFileReader::ReadData(
-	BYTE __out **p_ppmbData,
-	size_t __in bytesToRead)
+    uint8_t  **p_ppmbData,
+    size_t  bytesToRead)
 {
-	if (INVALID_HANDLE_VALUE == m_hFile) {
+    if (m_hFile == nullptr) {
 		return 0;
 	}
-	if (0 == bytesToRead) {
+    if (0 == bytesToRead) {
 		return 0;
 	}
 
-	if (m_stBufferedDataSize - m_stCurPos < bytesToRead) {
-		if (0 != ReadDataFromFile (bytesToRead)) {
-			*p_ppmbData = NULL;
+    if (m_stBufferedDataSize - m_stCurPos < bytesToRead) {
+        if (0 != ReadDataFromFile (bytesToRead)) {
+            *p_ppmbData = nullptr;
 			return 0;
 		}
 	}
 
 	*p_ppmbData = &(m_pmbData[m_stCurPos]);
-	m_stCurPos += bytesToRead;
+    m_stCurPos += bytesToRead;
 
-	return bytesToRead;
+    return bytesToRead;
 }
+
 
 int CFileReader::CloseDataFile()
 {
-	if (INVALID_HANDLE_VALUE != m_hFile) {
-		CloseHandle (m_hFile);
-		m_hFile = INVALID_HANDLE_VALUE;
+    if (m_hFile) {
+        fclose(m_hFile);
+        m_hFile = nullptr;
 		return 0;
 	}
 	else {
@@ -96,67 +82,42 @@ int CFileReader::CloseDataFile()
 	}
 }
 
-CFileReader::CFileReader(void)
-{
-	m_pmbData = NULL;
-	m_stBufferSize = 0;
-	m_stReadChunkSize = 0;
-	m_stBufferedDataSize = 0;
-	m_stCurPos = 0;
-	m_hFile = INVALID_HANDLE_VALUE;
-	m_hMemHeap = NULL;
-}
 
-CFileReader::~CFileReader(void)
-{
-	if (NULL != m_hMemHeap) {
-		HeapDestroy (m_hMemHeap);
-		m_hMemHeap = NULL;
-	}
-	if (INVALID_HANDLE_VALUE != m_hFile) {
-		CloseHandle (m_hFile);
-		m_hFile = INVALID_HANDLE_VALUE;
-	}
-}
 
 int CFileReader::ReadDataFromFile (size_t stRequestedDataSize)
 {
-	DWORD dwBytesRead;
+    size_t readBytes;
 
 	if (m_stCurPos + stRequestedDataSize > m_stBufferSize) {
-		// возможно здесь стоило бы попытаться увеличить буфер
-		//return ERROR_INSUFFICIENT_BUFFER;
+        return -2;
 	}
 	if ( m_stBufferedDataSize == 0 || m_stCurPos > m_stReadChunkSize) {
-		if (!ReadFile(
-			m_hFile,
-			m_pmbData,
-			m_stReadChunkSize,
-			&dwBytesRead,
-			NULL)) {
-				return GetLastError();
-		}
-		if (dwBytesRead < stRequestedDataSize) {
+        readBytes = fread(m_pmbData, sizeof(uint8_t), m_stReadChunkSize, m_hFile);
+        if (readBytes < stRequestedDataSize) {
 			return -1;
 		}
 		m_stCurPos = 0;
-		m_stBufferedDataSize = dwBytesRead;
+        m_stBufferedDataSize = readBytes;
 	}
 	else {
-		size_t stBytesToRead = stRequestedDataSize - m_stBufferedDataSize + m_stCurPos;
-		if (!ReadFile(
-			m_hFile,
-			&(m_pmbData[m_stBufferedDataSize]),
-			stBytesToRead,
-			&dwBytesRead,
-			NULL)) {
-				return GetLastError();
-		}
-		if (stBytesToRead != dwBytesRead) {
+        size_t bytesToRead = stRequestedDataSize - m_stBufferedDataSize + m_stCurPos;
+        readBytes = fread(&(m_pmbData[m_stBufferedDataSize]), sizeof(uint8_t), bytesToRead, m_hFile);
+        if (bytesToRead != readBytes) {
 			return -1;
 		}
-		m_stBufferedDataSize += dwBytesRead;
+        m_stBufferedDataSize += readBytes;
 	}
 	
 	return 0;
+}
+
+
+CFileReader::~CFileReader(void)
+{
+    if (m_pmbData != nullptr) {
+        free(m_pmbData);
+    }
+    if (m_hFile != nullptr) {
+        fclose(m_hFile);
+    }
 }
