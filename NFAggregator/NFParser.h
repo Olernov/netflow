@@ -95,7 +95,7 @@ class CFileReader;
 
 #pragma pack(push, 1)
 
-	struct SNFv9Header {
+	struct NFPacket {
         uint16_t wVersion;
         uint16_t wCount;
         uint32_t dwSysUpTime;
@@ -135,13 +135,13 @@ public:
 private:
     uint32_t ParseNFHeader(uint8_t *buffer,
         int packetLen,
-        SNFv9Header *nfHeader);
+        NFPacket *nfHeader);
     // function returns count of processed records
-    uint32_t ParseFlowSet (CFileReader& fileReader, SNFv9Header *p_psoHeader);
-    int ParseTemplateFlowSet(SNFv9Header *nfHeader,
+    uint32_t ParseFlowSet (CFileReader& fileReader, NFPacket *p_psoHeader);
+    int ParseTemplateFlowSet(NFPacket *nfHeader,
         uint8_t *buffer,
         size_t dataSize);
-    void ParseDataFlowSet(SNFv9Header *p_psoHeader,
+    void ParseDataFlowSet(NFPacket *p_psoHeader,
         SNFv9Template *p_psoTemplate,
         uint8_t *p_pmbBuf,
         uint32_t recordCount);
@@ -151,7 +151,7 @@ private:
         size_t bytesToCopy);
     bool ParseDataRecord(uint8_t *p_pmbBuf,
         SNFv9Template *nfTemplate,
-        SNFv9Header *nfHeader, DataRecord *dataRecord);
+        NFPacket *nfHeader, DataRecord *dataRecord);
 private:
     Aggregator* aggregator;
     std::map<uint64_t,SNFv9Template*> m_mapTemplates;
@@ -170,5 +170,5 @@ private:
         return true;
     }
 
-    bool ParseSwitchedTime(uint8_t* rawData, int fieldSize, SNFv9Header* nfHeader, time_t& switchedTime);
+    bool ParseSwitchedTime(uint8_t* rawData, int fieldSize, NFPacket* nfHeader, time_t& switchedTime);
 };

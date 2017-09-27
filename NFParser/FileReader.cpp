@@ -103,7 +103,7 @@ int CFileReader::ReadDataFromFile (size_t stRequestedDataSize)
         size_t bytesToRead = stRequestedDataSize - m_stBufferedDataSize + m_stCurPos;
         readBytes = fread(&(m_pmbData[m_stBufferedDataSize]), sizeof(uint8_t), bytesToRead, m_hFile);
         if (bytesToRead != readBytes) {
-			return -1;
+            return -1;
 		}
         m_stBufferedDataSize += readBytes;
 	}

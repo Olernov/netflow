@@ -54,6 +54,7 @@ void MainLoopController::Run()
                 }
 
                 while(nfParser.ProcessNextExportPacket(fileReader)) {
+                    // TODO: analyze false result
                     ;
                 }
 

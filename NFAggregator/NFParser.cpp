@@ -19,18 +19,18 @@ bool CNFParser::ProcessNextExportPacket(CFileReader &fileReader)
 	do {
         bytesRead = fileReader.ReadData(
 			&pbBuf,
-			sizeof(SNFv9Header));
-        if (sizeof(SNFv9Header) != bytesRead) {
+			sizeof(NFPacket));
+        if (sizeof(NFPacket) != bytesRead) {
             retVal = false;
 			break;
 		}
 
-        SNFv9Header soNFHdr;
+        NFPacket soNFHdr;
         bytesOperated = ParseNFHeader(
 			pbBuf,
             (uint32_t)bytesRead,
 			&soNFHdr);
-        if (sizeof(SNFv9Header) != bytesOperated) {
+        if (sizeof(NFPacket) != bytesOperated) {
             retVal = false;
 			break;
 		}
@@ -58,7 +58,7 @@ bool CNFParser::ProcessNextExportPacket(CFileReader &fileReader)
 uint32_t CNFParser::ParseNFHeader(
     uint8_t *buffer,
     int packetLen,
-    SNFv9Header *nfHeader)
+    NFPacket *nfHeader)
 {
     uint32_t dwRetVal = 0;
     uint32_t dwReadInd = 0, dwCopyBytes;
@@ -95,6 +95,7 @@ uint32_t CNFParser::ParseNFHeader(
         dwReadInd += dwCopyBytes;
 
         if (9 != nfHeader->wVersion) {
+            // TODO: signal error
 			char mcMsg[256];
             size_t stMsgLen = snprintf(
 				mcMsg,
@@ -122,7 +123,7 @@ uint32_t CNFParser::ParseNFHeader(
 	return dwRetVal;
 }
 
-uint32_t CNFParser::ParseFlowSet (CFileReader &fileReader, SNFv9Header *p_psoHeader)
+uint32_t CNFParser::ParseFlowSet (CFileReader &fileReader, NFPacket *p_psoHeader)
 {
     uint32_t dwRetVal = 0;
     uint8_t *pbBuf;
@@ -220,7 +221,7 @@ uint32_t CNFParser::ParseFlowSet (CFileReader &fileReader, SNFv9Header *p_psoHea
 
 
 int CNFParser::ParseTemplateFlowSet(
-    SNFv9Header *nfHeader,
+    NFPacket *nfHeader,
     uint8_t *buffer,
     size_t dataSize)
 {
@@ -304,7 +305,7 @@ int CNFParser::ParseTemplateFlowSet(
 }
 
 void CNFParser::ParseDataFlowSet(
-    SNFv9Header *nfHeader,
+    NFPacket *nfHeader,
     SNFv9Template *nfTemplate,
     uint8_t *buffer,
     uint32_t recordCount)
@@ -354,7 +355,7 @@ void CNFParser::CopyBlock(
 bool CNFParser::ParseDataRecord(
     uint8_t *rawData,
     SNFv9Template *nfTemplate,
-    SNFv9Header *nfHeader,
+    NFPacket *nfHeader,
     DataRecord* dataRecord)
 {
     for (size_t i = 0; i < nfTemplate->fieldCount; ++i)
@@ -408,7 +409,7 @@ bool CNFParser::ParseDataRecord(
 }
 
 
-bool CNFParser::ParseSwitchedTime(uint8_t* rawData, int fieldSize, SNFv9Header* nfHeader, time_t& switchedTime)
+bool CNFParser::ParseSwitchedTime(uint8_t* rawData, int fieldSize, NFPacket* nfHeader, time_t& switchedTime)
 {
     uint32_t switchedTimeMs;
     if (!ReadInteger(rawData, fieldSize, switchedTimeMs)) {
