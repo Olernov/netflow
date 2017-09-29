@@ -46,7 +46,20 @@ void CopyBlock(
 }
 
 
-//--------------------------------------------
+CNFParser::CNFParser (bool p_bCountPackets)
+{
+    m_pcoFileWriter = nullptr;
+    m_pcoFileReader = nullptr;
+    m_pcoFilter = nullptr;
+    m_pcoStatKeeper = nullptr;
+    m_bOutputHeader = false;
+    m_bOutputTemplate = false;
+    memset(m_msoOPT, 0, sizeof(m_msoOPT));
+    m_bUseOPT = false;
+    m_bCountPackets = p_bCountPackets;
+    m_bDontOutputData = false;
+}
+
 
 bool CNFParser::Init(
 	CFileWriter *p_pcoFileWriter,
@@ -119,8 +132,6 @@ bool CNFParser::Init(
 bool CNFParser::ReadNFPacket()
 {
     uint8_t *buffer;
-    uint32_t dwBytesOperated = 0;
-
     if (m_pcoFileReader == nullptr) {
         return false;
     }
@@ -145,8 +156,6 @@ bool CNFParser::ReadNFPacket()
         return false;
     }
 
-    //uint32_t dwRetVal = 0;
-    //uint32_t bufferPos = 0, dwCopyBytes;
     NFPacket* nfPacket = nullptr;
     if (version == NETFLOW_V9) {
         nfPacket = new V9Packet(this);
@@ -164,300 +173,12 @@ bool CNFParser::ReadNFPacket()
     if (m_bOutputHeader) {
         nfPacket->OutputHeader();
     }
-    bool bRetVal = true;
+    bool parseRes = nfPacket->ParseBody();
 
-    nfPacket->ParseBody();
-//        uint32_t dwRecordCount = 0;
-//        uint32_t dwTmpRecCnt;
-
-//        //if (nfHeader->version == 9) {
-//            while (dwRecordCount < nfPacket->count) {
-//                dwTmpRecCnt = 0;
-//                dwTmpRecCnt = ParseFlowSet (&nfPacket);
-
-//                if (0 == dwTmpRecCnt) {
-//                    break;
-//                }
-
-//                if (-1 == dwTmpRecCnt) {
-//                    bRetVal = false;
-//                    break;
-//                }
-
-//                dwRecordCount += dwTmpRecCnt;
-
-//            }
-//        }
     delete nfPacket;
-	return bRetVal;
+    return parseRes;
 }
 
-CNFParser::CNFParser (bool p_bCountPackets)
-{
-    m_pcoFileWriter = nullptr;
-    m_pcoFileReader = nullptr;
-    m_pcoFilter = nullptr;
-    m_pcoStatKeeper = nullptr;
-    m_bOutputHeader = false;
-    m_bOutputTemplate = false;
-	memset(m_msoOPT, 0, sizeof(m_msoOPT));
-    m_bUseOPT = false;
-	m_bCountPackets = p_bCountPackets;
-    m_bDontOutputData = false;
-}
-
-CNFParser::~CNFParser(void)
-{
-}
-
-
-//uint32_t CNFParser::ParseFlowSet (V9Packet *p_psoHeader)
-//{
-//    uint32_t dwRetVal = 0;
-//    uint8_t *pbBuf;
-//    size_t stuint8_tRead;
-
-//	do {
-
-//		SNFv9FlowSet soFlowSet;
-
-//		// считываем из файла заголовок FlowSet
-//        stuint8_tRead = m_pcoFileReader->ReadData(
-//			&pbBuf,
-//			sizeof(soFlowSet));
-
-//        if (stuint8_tRead != sizeof(soFlowSet)) {
-//			dwRetVal = -1;
-//			break;
-//		}
-
-//		// копирование FlowSet ID
-//		soFlowSet.m_wFlowSetID = ntohs (*((u_short*)pbBuf));
-
-//		// копирование Length
-//		soFlowSet.m_wLength = ntohs (*((u_short*)&(pbBuf[2])));
-
-//		if (0 == soFlowSet.m_wLength) {
-//			dwRetVal = -1;
-//			break;
-//		}
-
-//		// считываем из файла данные
-//        stuint8_tRead = m_pcoFileReader->ReadData(
-//			&pbBuf,
-//			soFlowSet.m_wLength - sizeof(soFlowSet));
-
-//        if (soFlowSet.m_wLength - sizeof(soFlowSet) != stuint8_tRead) {
-//			dwRetVal = -1;
-//			break;
-//		}
-
-//		// если FlowSet содержит описание шаблона
-//		if (255 >= soFlowSet.m_wFlowSetID) {
-//			switch (soFlowSet.m_wFlowSetID)
-//			{
-//			case 0:
-//				dwRetVal =
-//					ParseTemplateFlowSet(
-//						p_psoHeader,
-//						pbBuf,
-//						soFlowSet.m_wLength - sizeof(soFlowSet));
-//				break;
-//			case 1:
-//				// запись не обработана
-//				m_pcoFileWriter->WriteData(
-//                    (uint8_t*)"Option record found\r\n",
-//					21);
-//				dwRetVal = 1;
-//				m_pcoFileWriter->Finalise();
-//				break;
-//			default:
-//				// запись не обработана
-//				m_pcoFileWriter->WriteData(
-//                    (uint8_t*)"Unkhown template packet\r\n",
-//					25);
-//				m_pcoFileWriter->Finalise();
-//				dwRetVal = 1;
-//				break;
-//			}
-
-//			// запись обработана корректно
-//		}
-//		// если FlowSet содержит данные
-//		else if ( 255 < soFlowSet.m_wFlowSetID )
-//		{
-//            uint64_t ulTmpltId;
-//            std::map<uint64_t,SNFv9Template*>::iterator iterTemplate;
-
-//			ulTmpltId = 0;
-//			ulTmpltId = soFlowSet.m_wFlowSetID;
-//            ulTmpltId |= ((uint64_t)(p_psoHeader->srcId) << 32);
-//			iterTemplate = m_mapTemplates.find (ulTmpltId);
-
-//			if (iterTemplate == m_mapTemplates.end()) {
-//				// запись не обработана
-//				// сигнализируем вызывающей функции,
-//				// что количество обработанных записей некорректно
-//				dwRetVal = 0;
-//			}
-//			else
-//			{
-//                uint32_t dwRecourdCount;
-
-//				dwRecourdCount = (soFlowSet.m_wLength - sizeof(soFlowSet)) / iterTemplate->second->wDataSize;
-
-//				// парсинг данных
-//				///////////////////////////////////////////////////////////
-//				SNFv9Template *psoTemplate;
-
-//				psoTemplate = iterTemplate->second;
-
-//				ParseDataFlowSet(
-//					p_psoHeader,
-//					psoTemplate,
-//					pbBuf,
-//					dwRecourdCount);
-//				///////////////////////////////////////////////////////////
-
-//				// запись обработана корректно
-//				dwRetVal = dwRecourdCount;
-
-//			}
-//		}
-
-//	} while ( 0 );
-
-//	return dwRetVal;
-//}
-
-//int CNFParser::ParseTemplateFlowSet(
-//    V9Packet *p_psoHeader,
-//    uint8_t *p_pmbBuf,
-//	size_t p_stDataSize)
-//{
-//    std::map<uint64_t,SNFv9Template*>::iterator iterTemplate;
-//	int iRetVal = 0;
-//	SNFv9Template soTemplate;
-//	size_t stReadInd = 0;
-//    uint64_t ulTmpltId;
-
-//	while (stReadInd < p_stDataSize) {
-//        memset(&soTemplate, 0, sizeof(soTemplate));
-
-//		// копирование Template ID
-//		soTemplate.wTemplateID = (p_pmbBuf[stReadInd++] << 8);
-//		soTemplate.wTemplateID += p_pmbBuf[stReadInd++];
-//		// копирование Field Count
-//		soTemplate.wFieldCount = (p_pmbBuf[stReadInd++] << 8);
-//		soTemplate.wFieldCount = p_pmbBuf[stReadInd++];
-
-//		// проверяем наличие шаблона в списке
-//		ulTmpltId = 0;
-//		ulTmpltId = soTemplate.wTemplateID;
-//        ulTmpltId |= ((uint64_t)(p_psoHeader->srcId) << 32);
-//		iterTemplate = m_mapTemplates.find (ulTmpltId);
-
-//		// если аналогичный шаблон уже сохранен
-//		if (iterTemplate != m_mapTemplates.end()) {
-//			// проверяем идентичность шаблонов
-//			// проверяем размеры данные
-//			if (iterTemplate->second->m_stMasterCopySize == p_stDataSize) {
-//				// и идентичность данных
-//				if (0 == memcmp(
-//					p_pmbBuf,
-//					iterTemplate->second->m_pmbMasterCopy,
-//					p_stDataSize)) {
-//						stReadInd += sizeof(SNFv9Field) * soTemplate.wFieldCount;
-//						++ iRetVal;
-//						continue;
-//				}
-//			}
-//			// если дошли до этого места, значит шаблоны не идентичны
-//			// удаляем прежний шаблон
-//			delete[] iterTemplate->second->m_pmbMasterCopy;
-//			delete iterTemplate->second;
-//			m_mapTemplates.erase (iterTemplate);
-//		}
-
-//		// запоминаем оригинал шаблона
-//		soTemplate.m_stMasterCopySize = p_stDataSize;
-//        soTemplate.m_pmbMasterCopy = new uint8_t[p_stDataSize];
-//		memcpy(
-//			soTemplate.m_pmbMasterCopy,
-//			p_pmbBuf,
-//			p_stDataSize);
-
-//		SNFv9Template *psoTmpTempl;
-//		SNFv9Field *psoTmpField;
-//		psoTmpTempl = new SNFv9Template;
-
-//		*psoTmpTempl = soTemplate;
-
-//        uint32_t dwOffset = 0;
-
-//		psoTmpTempl->m_mpsoField = new SNFv9Field*[soTemplate.wFieldCount];
-
-//        for ( uint32_t i=0; i < soTemplate.wFieldCount; ++i ) {
-
-//			psoTmpField = new SNFv9Field;
-//			psoTmpField->m_dwOffset = dwOffset;
-
-//			psoTmpField->m_wFieldType = (p_pmbBuf[stReadInd++] << 8);
-//			psoTmpField->m_wFieldType += p_pmbBuf[stReadInd++];
-
-//			psoTmpField->m_wFieldSize =  (p_pmbBuf[stReadInd++] << 8);
-//			psoTmpField->m_wFieldSize += p_pmbBuf[stReadInd++];
-
-//			dwOffset += psoTmpField->m_wFieldSize;
-
-//			psoTmpTempl->wDataSize += psoTmpField->m_wFieldSize;
-
-//			psoTmpTempl->m_mpsoField[i] = psoTmpField;
-//		}
-
-//		ulTmpltId = 0;
-//		ulTmpltId = soTemplate.wTemplateID;
-//        ulTmpltId |= ((uint64_t)(p_psoHeader->srcId) << 32);
-
-//		m_mapTemplates.insert (
-//            std::pair<uint64_t,SNFv9Template*>(
-//				ulTmpltId,
-//				psoTmpTempl) );
-//		++ iRetVal;
-//		if (m_bOutputTemplate) {
-//			OutputTemplate(
-//                p_psoHeader->srcId,
-//				psoTmpTempl);
-//		}
-
-//	}
-
-//	return iRetVal;
-//}
-
-//void CNFParser::ParseDataFlowSet(
-//    V9Packet *p_psoHeader,
-//	SNFv9Template *p_psoTemplate,
-//    uint8_t *p_pmbBuf,
-//    uint32_t p_dwRecordCount)
-//{
-//	//
-//	// обходим все записи
-
-//    for ( uint32_t i = 0; i < p_dwRecordCount; ++i )
-//	{
-//		if (m_pcoFilter->RowFilter(
-//				p_psoHeader,
-//				p_psoTemplate,
-//				p_pmbBuf)) {
-//			OutputData(
-//				p_pmbBuf,
-//				p_psoTemplate,
-//				p_psoHeader);
-//		}
-//		p_pmbBuf += p_psoTemplate->wDataSize;
-//	}
-//}
 
 
 

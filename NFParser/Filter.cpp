@@ -37,7 +37,7 @@ bool CFilter::SetParameter(
 
 bool CFilter::RowFilter(
     V9Packet *p_psoHeader,
-	SNFv9Template *p_psoTemplate,
+	FlowTemplate *p_psoTemplate,
     uint8_t *p_pmbBuf)
 {
     uint32_t dwValue;

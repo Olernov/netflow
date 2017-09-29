@@ -20,8 +20,6 @@ private:
     const Config& config;
     typedef std::vector<filesystem::path> fileList;
     const uint32_t fileReaderChunkSize = 0x1000000;
-    std::string cdrFilesDirectory;
-    std::string cdrExtension;
     const size_t maxAlertMessageLen = 2000;
     std::string lastAlertMessage;
     time_t lastAlertTime;

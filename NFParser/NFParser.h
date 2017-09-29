@@ -37,6 +37,7 @@ struct SOutputTemplate {
 class CNFParser
 {
 public:
+    CNFParser (bool p_bCountPackets = false);
     bool Init(
 		CFileWriter *p_pcoFileWriter,
 		CFileReader *p_pcoFileReader,
@@ -44,25 +45,8 @@ public:
 		CStatKeeper *p_pcoStatKeeper,
         uint32_t p_dwFlags);
     bool ReadNFPacket();
-public:
-    CNFParser (bool p_bCountPackets = false);
-	~CNFParser(void);
+
 private:
-//    NFPacket *ParseNFHeader(CFileReader *fileReader);
-	// функция возвращает количество обработанных записей
-    //uint32_t ParseFlowSet (V9Packet *p_psoHeader);
-//    int ParseTemplateFlowSet(V9Packet *p_psoHeader,
-//        uint8_t *p_pmbBuf,
-//        size_t p_stDataSize);
-//    void ParseDataFlowSet(V9Packet *p_psoHeader,
-//        SNFv9Template *p_psoTemplate,
-//        uint8_t *p_pmbBuf,
-//        uint32_t p_dwRecordCount);
-//	void CopyBlock(
-//        uint8_t *p_pmbDst,
-//		size_t p_stDstSize,
-//        uint8_t *p_pmbSrc,
-//        size_t p_stuint8_tsToCopy);
     void OutputTemplate(
         uint32_t p_dwSrcId,
         SNFv9Template *p_psoTemplate);

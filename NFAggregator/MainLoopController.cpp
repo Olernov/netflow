@@ -52,7 +52,7 @@ void MainLoopController::Run()
                                  + std::to_string(frOpenRes);
                     continue;
                 }
-
+                nfParser.ResetCounters();
                 while(nfParser.ProcessNextExportPacket(fileReader)) {
                     // TODO: analyze false result
                     ;
@@ -61,7 +61,9 @@ void MainLoopController::Run()
                 fileReader.CloseDataFile();
                 double processTimeSec = difftime(time(nullptr), processStartTime);
                 logWriter << "File " + file.filename().string() + " processed in " +
-                             std::to_string(processTimeSec) + " sec.";
+                             std::to_string(processTimeSec) + " sec. Data records: " +
+                             std::to_string(nfParser.GetDataRecordsCount()) + ". Templates: " +
+                             std::to_string(nfParser.GetTemplatesCount());
 
                 filesystem::path archivePath(config.archiveDir);
                 filesystem::path archiveFilename = archivePath / file.filename();
@@ -111,7 +113,7 @@ void MainLoopController::ConstructSortedFileList(const std::string& inputDir,
     filesystem::directory_iterator endIterator;
     for(filesystem::directory_iterator iter(inputPath); iter != endIterator; iter++) {
         if (filesystem::is_regular_file(iter->status())
-                && iter->path().extension() == cdrExtension) {
+                && iter->path().extension() == config.cdrExtension) {
             sourceFiles.push_back(iter->path());
         }
     }

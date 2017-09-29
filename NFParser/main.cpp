@@ -446,9 +446,7 @@ int main ( int argc, char* argv[] )
                 iterFileList->first.c_str(),
                 false);
             while (coParser.ReadNFPacket());
-            printf(
-                " - completed\n",
-                iterFileList->first.c_str());
+            printf(" - completed\n");
             coFileReader.CloseDataFile();
             coFileWriter.Finalise();
         } while (0);

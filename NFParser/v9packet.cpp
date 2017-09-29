@@ -6,12 +6,6 @@ extern void UnixTimeToStr(
     char *m_pmcOutputStr,
     size_t p_stMaxChars);
 
-extern void CopyBlock(
-    uint8_t *p_pmbDst,
-    size_t p_stDstSize,
-    uint8_t *p_pmbSrc,
-    size_t p_stBytesToCopy);
-
 
 V9Packet::V9Packet(CNFParser* nfParser) :
     NFPacket(NETFLOW_V9, nfParser)
@@ -26,7 +20,6 @@ bool V9Packet::ParseHeader()
     if (bytesRead != bytesToRead) {
         return false;
     }
-    // TODO: ensure buffer length enough
     size_t bufferPos = 0;
     count = ntohs (*((u_short*)&(buffer[bufferPos])));
     bufferPos += 2;
@@ -71,7 +64,7 @@ uint32_t V9Packet::ParseFlowSet()
     uint8_t *pbBuf;
 
     do {
-        SNFv9FlowSet soFlowSet;
+        FlowSetHeader soFlowSet;
         // read flowset header
         size_t stBytesRead = nfParser->m_pcoFileReader->ReadData(
             &pbBuf,
@@ -146,7 +139,7 @@ uint32_t V9Packet::ParseFlowSet()
                 uint32_t dwRecordCount = (soFlowSet.m_wLength - sizeof(soFlowSet))
                         / iterTemplate->second->wDataSize;
                 // data parsing
-                SNFv9Template *psoTemplate = iterTemplate->second;
+                FlowTemplate *psoTemplate = iterTemplate->second;
                 ParseDataFlowSet(
                     psoTemplate,
                     pbBuf,
@@ -162,9 +155,9 @@ uint32_t V9Packet::ParseFlowSet()
 
 int V9Packet::ParseTemplateFlowSet(uint8_t *buffer, size_t dataSize)
 {
-    std::map<uint64_t,SNFv9Template*>::iterator iterTemplate;
+    std::map<uint64_t,FlowTemplate*>::iterator iterTemplate;
     int iRetVal = 0;
-    SNFv9Template soTemplate;
+    FlowTemplate soTemplate;
     size_t stReadInd = 0;
     uint64_t ulTmpltId;
 
@@ -194,7 +187,7 @@ int V9Packet::ParseTemplateFlowSet(uint8_t *buffer, size_t dataSize)
                     buffer,
                     iterTemplate->second->m_pmbMasterCopy,
                     dataSize)) {
-                        stReadInd += sizeof(SNFv9Field) * soTemplate.wFieldCount;
+                        stReadInd += sizeof(FlowField) * soTemplate.wFieldCount;
                         ++ iRetVal;
                         continue;
                 }
@@ -214,19 +207,19 @@ int V9Packet::ParseTemplateFlowSet(uint8_t *buffer, size_t dataSize)
             buffer,
             dataSize);
 
-        SNFv9Template *psoTmpTempl;
-        SNFv9Field *psoTmpField;
-        psoTmpTempl = new SNFv9Template;
+        FlowTemplate *psoTmpTempl;
+        FlowField *psoTmpField;
+        psoTmpTempl = new FlowTemplate;
 
         *psoTmpTempl = soTemplate;
 
         uint32_t dwOffset = 0;
 
-        psoTmpTempl->m_mpsoField = new SNFv9Field*[soTemplate.wFieldCount];
+        psoTmpTempl->m_mpsoField = new FlowField*[soTemplate.wFieldCount];
 
         for ( uint32_t i=0; i < soTemplate.wFieldCount; ++i ) {
 
-            psoTmpField = new SNFv9Field;
+            psoTmpField = new FlowField;
             psoTmpField->m_dwOffset = dwOffset;
 
             psoTmpField->m_wFieldType = (buffer[stReadInd++] << 8);
@@ -247,7 +240,7 @@ int V9Packet::ParseTemplateFlowSet(uint8_t *buffer, size_t dataSize)
         ulTmpltId |= ((uint64_t)(srcId) << 32);
 
         nfParser->m_mapTemplates.insert (
-            std::pair<uint64_t,SNFv9Template*>(
+            std::pair<uint64_t,FlowTemplate*>(
                 ulTmpltId,
                 psoTmpTempl) );
         ++ iRetVal;
@@ -264,7 +257,7 @@ int V9Packet::ParseTemplateFlowSet(uint8_t *buffer, size_t dataSize)
 
 
 void V9Packet::ParseDataFlowSet(
-    SNFv9Template *nfTemplate,
+    FlowTemplate *nfTemplate,
     uint8_t *buffer,
     uint32_t recordCount)
 {
