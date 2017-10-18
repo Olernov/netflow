@@ -16,10 +16,11 @@ bool V9Packet::ParseHeader()
     uint8_t* buffer;
     const size_t bytesToRead = HEADER_SIZE - VERSION_FIELD_SIZE;
     size_t bytesRead = fileReader.ReadData(&buffer, bytesToRead);
-
     if (bytesRead != bytesToRead) {
         return false;
     }
+    bytesProcessed += bytesRead;
+
     size_t bufferPos = 0;
     headerInfo.recordCount = ntohs (*((u_short*)&(buffer[bufferPos])));
     bufferPos += 2;

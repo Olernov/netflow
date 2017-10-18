@@ -1,4 +1,5 @@
 #include <boost/filesystem.hpp>
+#include <sstream>
 #include "Config.h"
 #include "Common.h"
 
@@ -57,13 +58,13 @@ void Config::ReadConfigFile(std::ifstream& configStream)
             connectString = option_value;
         }
         else if (option_name == inputDirParamName) {
-            inputDir = option_value;
+            inputDirs.push_back(option_value);
         }
         else if (option_name == archiveDirParamName) {
-            archiveDir = option_value;
+            archiveDirs.push_back(option_value);
         }
         else if (option_name == logDirParamName) {
-            logDir = option_value;
+            logDirs.push_back(option_value);
         }
         else if (option_name == cdrExtensionParamName) {
             cdrExtension = option_value;
@@ -116,44 +117,63 @@ void Config::ValidateParams()
     if (connectString.empty()) {
         throw std::runtime_error(connectStringParamName + " parameter is not set.");
     }
-    if (inputDir.empty()) {
+    if (inputDirs.empty()) {
         throw std::runtime_error(inputDirParamName + " parameter is not set.");
     }
-    if (archiveDir.empty()) {
-        throw std::runtime_error(archiveDirParamName + " parameter is not set.");
+    if (archiveDirs.size() != inputDirs.size()) {
+        throw std::runtime_error("Count of INPUT_DIRs must be equal to the count of ARCHIVE_DIRs.");
+    }
+    if (logDirs.size() != inputDirs.size()) {
+        throw std::runtime_error("Count of INPUT_DIRs must be equal to the count of LOG_DIRs.");
     }
 
-    filesystem::path inputPath(inputDir);
-    filesystem::path archivePath(archiveDir);
+    for (auto d : inputDirs) {
+        ValidateDirectory(d);
+    }
+    for (auto d : archiveDirs) {
+        ValidateDirectory(d);
+    }
+    for (auto d : logDirs) {
+        ValidateDirectory(d);
+    }
 
-    if (!filesystem::exists(inputPath)) {
-        throw std::runtime_error(std::string("Input directory ") + inputDir + " does not exist");
-    }
-    if (!filesystem::exists(archivePath)) {
-        throw std::runtime_error(std::string("Archive directory ") + archiveDir + " does not exist");
-    }
-    if (!filesystem::is_directory(inputPath)) {
-        throw std::runtime_error(inputDir + " is not a directory");
-    }
-    if (!filesystem::is_directory(archivePath)) {
-        throw std::runtime_error(archiveDir + " is not a directory");
-    }
     if (!(threadCount >= minThreadCount && threadCount <= maxThreadCount)) {
         throw std::runtime_error(threadCountParamName + " must have value from " +
                                  std::to_string(minThreadCount) + " to " + std::to_string(maxThreadCount));
     }
 }
 
+
+void Config::ValidateDirectory(const std::string& dir)
+{
+    filesystem::path path(dir);
+    if (!filesystem::exists(path)) {
+        throw std::runtime_error(std::string("Input directory ") + dir + " does not exist");
+    }
+    if (!filesystem::is_directory(path)) {
+        throw std::runtime_error(dir + " is not a directory");
+    }
+}
+
 std::string Config::DumpAllSettings()
 {
-    return connectStringParamName + ": " + connectString + crlf +
-           inputDirParamName + ": " + inputDir + crlf +
-            archiveDirParamName + ": " + archiveDir + crlf +
-            logDirParamName + ": " + logDir + crlf +
-            cdrExtensionParamName + ": " + cdrExtension + crlf +
-            volumeExportThresholdMbParamName + ": " + std::to_string(volumeExportThresholdMb) + crlf +
-            sessionEjectPeriodParamName + ": " + std::to_string(sessionEjectPeriodMin) + crlf +
-            logLevelParamName + ": " + (logLevel == error ? "error" : (logLevel == debug ? "debug" : "notice")) + crlf +
-            noCdrAlertPeriodParamName + ": " + std::to_string(noCdrAlertPeriodMin);
+    std::stringstream ss;
+    ss << connectStringParamName << ": " << connectString << std::endl;
+    for (auto d : inputDirs) {
+        ss << inputDirParamName << ": " << d << std::endl;
+    }
+    for (auto d : archiveDirs) {
+        ss << archiveDirParamName << ": " << d << std::endl;
+    }
+    for (auto d : logDirs) {
+        ss << logDirParamName << ": " << d << std::endl;
+    }
+    ss  << cdrExtensionParamName << ": " << cdrExtension << std::endl
+        << volumeExportThresholdMbParamName << ": " << std::to_string(volumeExportThresholdMb)  << std::endl
+        << sessionEjectPeriodParamName << ": " << std::to_string(sessionEjectPeriodMin)  << std::endl
+        << logLevelParamName << ": "
+            << (logLevel == error ? "error" : (logLevel == debug ? "debug" : "notice"))  << std::endl
+        << noCdrAlertPeriodParamName << ": " << std::to_string(noCdrAlertPeriodMin);
+    return ss.str();
 }
 

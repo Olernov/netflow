@@ -24,10 +24,5 @@ private:
         return headerInfo.sourceId;
     }
 
-
-    //bool ParseFlowSet();
-//    int ParseTemplateFlowSet(uint8_t *buffer, size_t dataSize);
-//    void ParseDataFlowSet(SNFv9Template *nfTemplate, uint8_t *buffer, uint32_t recordCount);
     bool ParseSwitchedTime(uint8_t* rawData, int fieldSize, time_t& switchedTime);
-//    bool ParseDataRecord(uint8_t *rawData, SNFv9Template *nfTemplate, DataRecord* dataRecord);
 };

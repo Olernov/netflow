@@ -31,8 +31,9 @@ protected:
     TemplateMap& templateMap;
     uint32_t dataRecordsCount;
     uint32_t templatesCount;
+    uint32_t bytesProcessed;
 
-    virtual uint32_t ParseFlowSet();
+    virtual int32_t ParseFlowSet();
     virtual int ParseTemplateFlowSet(uint8_t *buffer, size_t dataSize);
     virtual void ParseDataFlowSet(FlowTemplate *nfTemplate, uint8_t *buffer, uint32_t recordCount);
     virtual bool ParseSwitchedTime(uint8_t* rawData, int fieldSize, time_t& switchedTime) = 0;
@@ -40,7 +41,7 @@ protected:
     virtual bool ParseDataRecord(uint8_t *rawData, FlowTemplate *nfTemplate, DataRecord* dataRecord);
 
     // Device identity is called differently in NFv9 and IPFIX (SourceID and DomainID)
-    // So we use virtaul function GetDomain here
+    // So we use virtual function GetDomain here
     virtual uint32_t GetDomainID() const = 0;
 
     template<typename T>

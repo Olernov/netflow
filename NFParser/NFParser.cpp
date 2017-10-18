@@ -161,9 +161,11 @@ bool CNFParser::ReadNFPacket()
         nfPacket = new V9Packet(this);
     }
     else if (version == IPFIX) {
-        nfPacket = new IpFixPacket(this);
+        // TODO:
+        //nfPacket = new IpFixPacket(this);
     }
     if (!nfPacket->ParseHeader()) {
+        std::cout << "Unable to parse header" << std::endl;
         return false;
     }
     if (m_bCountPackets) {
@@ -242,9 +244,8 @@ void CNFParser::OutputTemplate(
 		2);
 }
 
-void CNFParser::OutputData(
-    uint8_t *p_pmbBuf,
-    SNFv9Template *p_psoTemplate,
+void CNFParser::OutputData(uint8_t *p_pmbBuf,
+    FlowTemplate *p_psoTemplate,
     V9Packet *p_psoHeader)
 {
     uint8_t mbValue[256];

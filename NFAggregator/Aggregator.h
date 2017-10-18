@@ -11,8 +11,7 @@
 #include "Config.h"
 #include "Session.h"
 
-typedef boost::lockfree::queue<DataRecord*, boost::lockfree::fixed_sized<true>> WorkerQueue;
-typedef std::unordered_multimap<uint32_t, Session_ptr> SessionMap;
+
 
 class Aggregator
 {
@@ -20,12 +19,17 @@ public:
     Aggregator(const Config& config, BillingInfo* billingInfo);
     void Initialize();
     void AddDataRecord(DataRecord* dataRecord);
+    bool CanContinueProcessing(std::string& descr);
     void Stop();
     ~Aggregator();
 
 private:
+    typedef boost::lockfree::queue<DataRecord*, boost::lockfree::fixed_sized<true>> WorkerQueue;
+    typedef std::unordered_multimap<uint32_t, Session_ptr> SessionMap;
+
     static const int workerQueueSize = 5000;
-    static const  int mapSizeReportPeriodMin = 5;
+    static const int mapSizeReportPeriodMin = 5;
+    static const size_t maxMapSize = 1000000;
 
     const Config &config;
     short dbConnectCnt;
@@ -36,8 +40,8 @@ private:
     std::vector<std::mutex*> mutexes;
     std::vector<std::condition_variable*> conditionVars;
     std::vector<SessionMap*> sessionMaps;
+    std::vector<bool> exceptionFlags;
     BillingInfo* billingInfo;
-    std::string exceptionText;
     std::vector<time_t> lastMapSizeReports;
 
     void WorkerThreadFunc(int index);

@@ -3,7 +3,7 @@
 #include "nfpacket.h"
 #include "v9packet.h"
 #include "IpFixPacket.h"
-#include "v9struct.h"
+#include "NFStruct.h"
 #include "FileReader.h"
 #include "Filter.h"
 #include "FileWriter.h"
@@ -49,9 +49,9 @@ public:
 private:
     void OutputTemplate(
         uint32_t p_dwSrcId,
-        SNFv9Template *p_psoTemplate);
+        FlowTemplate *p_psoTemplate);
     void OutputData(uint8_t *p_pmbBuf,
-        SNFv9Template *p_psoTemplate,
+        FlowTemplate *p_psoTemplate,
         V9Packet *p_psoHeader);
 private:
 	CFileWriter *m_pcoFileWriter;
@@ -59,7 +59,7 @@ private:
 	CFilter *m_pcoFilter;
 	CStatKeeper *m_pcoStatKeeper;
     std::map<uint32_t,uint32_t> m_mapOPT;
-    std::map<uint64_t,SNFv9Template*> m_mapTemplates;
+    std::map<uint64_t,FlowTemplate*> m_mapTemplates;
 	SOutputTemplate m_msoOPT[7];
     bool m_bOutputHeader;
     bool m_bOutputTemplate;

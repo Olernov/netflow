@@ -1,3 +1,4 @@
+
 #include "nfpacket.h"
 
 NFPacket::NFPacket(FlowVersion v, CFileReader& fr, TemplateMap &tm, Aggregator* aggr) :
@@ -6,8 +7,7 @@ NFPacket::NFPacket(FlowVersion v, CFileReader& fr, TemplateMap &tm, Aggregator* 
     aggregator(aggr),
     templateMap(tm),
     dataRecordsCount(0),
-    templatesCount(0),
-    bytesProcessed(VERSION_FIELD_SIZE) // since NFParser has already read Version field
+    templatesCount(0)
 {
     switch(version) {
     case NETFLOW_V9:
@@ -21,8 +21,8 @@ NFPacket::NFPacket(FlowVersion v, CFileReader& fr, TemplateMap &tm, Aggregator* 
     }
 }
 
-// returns count of records processed from flowset or -1 if no data available
-int32_t NFPacket::ParseFlowSet()
+
+uint32_t NFPacket::ParseFlowSet()
 {
     uint8_t *buffer;
     FlowSetHeader flowSetHeader;
@@ -31,7 +31,7 @@ int32_t NFPacket::ParseFlowSet()
     if (stBytesRead != sizeof(flowSetHeader)) {
         return -1;
     }
-    bytesProcessed += stBytesRead;
+
     flowSetHeader.flowSetID = ntohs (*((u_short*)buffer));
     flowSetHeader.length = ntohs (*((u_short*)&(buffer[2])));
     if (flowSetHeader.length == 0) {
@@ -39,7 +39,6 @@ int32_t NFPacket::ParseFlowSet()
     }
 
     stBytesRead = fileReader.ReadData(&buffer, flowSetHeader.length - sizeof(flowSetHeader));
-    bytesProcessed += stBytesRead;
     if (flowSetHeader.length - sizeof(flowSetHeader) != stBytesRead) {
         return -1;
     }
@@ -146,82 +145,19 @@ void NFPacket::ParseDataFlowSet(
     uint8_t *buffer,
     uint32_t recordCount)
 {
-    for (uint32_t i = 0; i < recordCount; ++i )	{
-        DataRecord* dataRecord = new DataRecord;
-        memset(dataRecord, 0 ,sizeof(DataRecord));
-        bool parseRes = ParseDataRecord(buffer, nfTemplate, dataRecord);
-        if (parseRes) {
-            dataRecordsCount++;
-            if (aggregator != nullptr) {
-                aggregator->AddDataRecord(dataRecord);
-            }
+    for ( uint32_t i = 0; i < recordCount; ++i )
+    {
+        if (nfParser->m_pcoFilter->RowFilter(
+                this,
+                nfTemplate,
+                buffer)) {
+            nfParser->OutputData(
+                buffer,
+                nfTemplate,
+                this);
         }
-        else {
-            delete dataRecord;
-        }
-        buffer += nfTemplate->dataSize;
+        buffer += nfTemplate->wDataSize;
     }
-}
-
-
-bool NFPacket::ParseDataRecord(uint8_t *rawData, FlowTemplate *nfTemplate, DataRecord* dataRecord)
-{
-    for (size_t i = 0; i < nfTemplate->fieldCount; ++i) {
-        switch (nfTemplate->field[i]->fieldType) {
-        case IDS_IPV4_SRC_ADDR:
-            if (!ReadInteger(rawData, nfTemplate->field[i]->fieldSize, dataRecord->srcIpAddr)) {
-                return false;
-            }
-            break;
-        case IDS_IPV4_DST_ADDR:
-            if (!ReadInteger(rawData, nfTemplate->field[i]->fieldSize, dataRecord->dstIpAddr)) {
-                return false;
-            }
-            break;
-        case IDS_L4_SRC_PORT:
-            if (!ReadInteger(rawData, nfTemplate->field[i]->fieldSize, dataRecord->srcPort)) {
-                return false;
-            }
-            break;
-        case IDS_L4_DST_PORT:
-            if (!ReadInteger(rawData, nfTemplate->field[i]->fieldSize, dataRecord->dstPort)) {
-                return false;
-            }
-            break;
-        case IDS_IN_BYTES:
-            if (!ReadInteger(rawData, nfTemplate->field[i]->fieldSize, dataRecord->inBytes)) {
-                return false;
-            }
-            break;
-        case IDS_OUT_BYTES:
-            if (!ReadInteger(rawData, nfTemplate->field[i]->fieldSize, dataRecord->outBytes)) {
-                return false;
-            }
-            break;
-        case IDS_FIRST_SWITCHED:
-            if (!ParseSwitchedTime(rawData, nfTemplate->field[i]->fieldSize, dataRecord->firstSwitched)) {
-                return false;
-            }
-            break;
-        case IDS_LAST_SWITCHED:
-            if (!ParseSwitchedTime(rawData, nfTemplate->field[i]->fieldSize, dataRecord->lastSwitched)) {
-                return false;
-            }
-            break;
-        case IDS_FLOW_START_MILLISECONDS:
-            if (!ParseDateTimeMs(rawData, nfTemplate->field[i]->fieldSize, dataRecord->firstSwitched)) {
-                return false;
-            }
-            break;
-        case IDS_FLOW_END_MILLISECONDS:
-            if (!ParseDateTimeMs(rawData, nfTemplate->field[i]->fieldSize, dataRecord->lastSwitched)) {
-                return false;
-            }
-            break;
-        }
-        rawData += nfTemplate->field[i]->fieldSize;
-    }
-    return true;
 }
 
 

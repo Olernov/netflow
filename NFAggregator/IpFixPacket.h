@@ -20,6 +20,7 @@ private:
         uint32_t domainId;
     } headerInfo;
     bool ParseSwitchedTime(uint8_t* rawData, int fieldSize, time_t& switchedTime);
+
     virtual uint32_t GetDomainID() const {
         return headerInfo.domainId;
     }
