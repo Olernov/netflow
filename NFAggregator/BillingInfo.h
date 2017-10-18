@@ -15,7 +15,7 @@ public:
     ~BillingInfo();
 private:
     typedef std::unordered_map<uint32_t, uint32_t> SubscribersMap;
-    static const int refreshPeriodMin = 1; //TODO: change to 5
+    static const int refreshPeriodMin = 5;
 
     std::string connectString;
     DBConnect dbConnect;

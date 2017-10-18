@@ -70,9 +70,12 @@ void MainLoopController::Run()
                     continue;
                 }
                 nfParser.ResetCounters();
-                while(nfParser.ProcessNextExportPacket(fileReader)) {
-                    // TODO: analyze false result
+                std::string errorDescr;
+                while(nfParser.ProcessNextExportPacket(fileReader, errorDescr)) {
                     ;
+                }
+                if (!errorDescr.empty()) {
+                    logWriter << errorDescr;
                 }
 
                 fileReader.CloseDataFile();

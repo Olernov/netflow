@@ -13,7 +13,7 @@ class CNFParser
 public:
     CNFParser();
     void Initialize(Aggregator* aggr);
-    bool ProcessNextExportPacket(CFileReader& fileReader);
+    bool ProcessNextExportPacket(CFileReader& fileReader, std::string &errorDescr);
     void ResetCounters();
     inline uint32_t GetDataRecordsCount() const { return dataRecordsCount; }
     inline uint32_t GetTemplatesCount() const { return templatesCount; }

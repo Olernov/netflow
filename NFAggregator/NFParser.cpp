@@ -12,17 +12,17 @@ void CNFParser::Initialize(Aggregator *aggr)
     aggregator = aggr;
 }
 
-bool CNFParser::ProcessNextExportPacket(CFileReader &fileReader)
+bool CNFParser::ProcessNextExportPacket(CFileReader &fileReader, std::string& errorDescr)
 {
     uint8_t *buffer;
     size_t stBytesRead = fileReader.ReadData(&buffer, NFPacket::VERSION_FIELD_SIZE);
     if (stBytesRead != NFPacket::VERSION_FIELD_SIZE) {
+        // most probably EOF so do not set errorDescr
         return false;
     }
     uint16_t version = ntohs (*((u_short*)buffer));
     if (version != NETFLOW_V9  && version != IPFIX) {
-        // TODO: signal ERROR!
-        printf("Error: invalid version number: %u\r\n", version);
+       errorDescr = "Error: invalid netflow version number: " + std::to_string(version);
        return false;
     }
 
@@ -34,10 +34,9 @@ bool CNFParser::ProcessNextExportPacket(CFileReader &fileReader)
         nfPacket = new IpFixPacket(fileReader, m_mapTemplates, aggregator);
     }
     if (!nfPacket->ParseHeader()) {
-        // TODO: signal ERROR!
+        errorDescr = "Error: unable to parse packet header";
         return false;
     }
-
     bool parseRes = nfPacket->ParseBody();
     dataRecordsCount += nfPacket->GetDataRecordsCount();
     templatesCount += nfPacket->GetTemplatesCount();

@@ -41,9 +41,9 @@ bool V9Packet::ParseHeader()
 
 bool V9Packet::ParseBody()
 {
-    uint32_t processedCount = 0;
+    int processedCount = 0;
     while (processedCount < headerInfo.recordCount) {
-        uint32_t processedFromFlowset = ParseFlowSet();
+        int processedFromFlowset = ParseFlowSet();
         if (processedFromFlowset == 0) {
             break;
         }
