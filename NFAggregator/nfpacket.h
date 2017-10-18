@@ -45,12 +45,12 @@ protected:
     virtual uint32_t GetDomainID() const = 0;
 
     template<typename T>
-    bool ReadInteger(uint8_t* rawData, int fieldSize, T& value) {
+    bool ReadInteger(uint8_t* rawData, size_t fieldSize, T& value) {
         if (fieldSize > sizeof(value)) {
             return false;
         }
         value = 0;
-        for (int i = 0; i < fieldSize; ++i) {
+        for (size_t i = 0; i < fieldSize; ++i) {
             value <<= 8;
             value |= *rawData;
             ++rawData;
