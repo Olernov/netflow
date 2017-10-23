@@ -56,7 +56,7 @@ void BillingInfo::RefreshBilledSubscribers()
     while(!dbStream.eof()) {
         uint32_t startIp, endIp, contractId;
         dbStream >> startIp >> endIp >> contractId;
-        for (int nextIp = startIp; nextIp <= endIp; ++nextIp) {
+        for (uint32_t nextIp = startIp; nextIp <= endIp; ++nextIp) {
             newBilledSubscribers.insert(std::make_pair(nextIp, contractId));
         }
     }

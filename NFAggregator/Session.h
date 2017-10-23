@@ -29,9 +29,9 @@ public:
     inline bool HaveDataToExport() const
         { return inBytesAggregated>0 || lastSwitched>firstSwitched; }
 private:
-    const long megabyteSizeInBytes = 1024*1024;
-    const long volumeExportThresholdMb;
-    const long sessionEjectPeriodMin;
+    const unsigned long megabyteSizeInBytes = 1024*1024;
+    const unsigned long volumeExportThresholdMb;
+    const unsigned long sessionEjectPeriodMin;
     const long defaultExportedRecordStatus = 0;
 
     DBConnect* dbConnect;

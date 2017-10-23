@@ -1,8 +1,9 @@
 #pragma once
 #include "common.h"
 
-struct SNFv9Header;
-struct SNFv9Template;
+struct NFPacket;
+struct V9Packet;
+struct FlowTemplate;
 
 class CFilter
 {
@@ -11,9 +12,8 @@ public:
         uint32_t p_dwParamId,
 		void *p_pvParamVal,
         uint32_t p_dwValSize);
-    bool RowFilter(
-		SNFv9Header *p_psoHeader,
-		SNFv9Template *p_psoTemplate,
+    bool RowFilter(V9Packet *p_psoHeader,
+        FlowTemplate *p_psoTemplate,
         uint8_t *p_pmbBuf);
     bool ParamFilter(
         uint32_t p_dwParamId,

@@ -38,13 +38,13 @@ void CheckExportedData(DBConnect& dbConnect)
     otlStream.close();
 }
 
+
 void RunStoredLogicTests(DBConnect& dbConnect)
 {
     std::cout << "Running stored database logic tests ..." << std::endl;
     otl_stream otlStream;
     otlStream.open(1, "call Billing.Netlow.RunAllTests()", dbConnect);
     otlStream.close();
-
 }
 
 
@@ -82,10 +82,11 @@ int main(int argc, const char* argv[])
         config.ValidateParams();
     }
     catch(const std::exception& ex) {
-        std::cerr << "Error when parsing config file " << confFilename << " " << std::endl;
+        std::cerr << "Error when parsing config file " << confFilename << std::endl;
         std::cerr << ex.what() <<std::endl;
         exit(EXIT_FAILURE);
     }
+
     struct sigaction act;
     memset(&act, 0, sizeof(act));
     act.sa_sigaction = SignalHandler;
@@ -93,14 +94,33 @@ int main(int argc, const char* argv[])
     sigaction(SIGINT, &act, NULL);
     sigaction(SIGTERM, &act, NULL);
 
-    const std::string pidFilename = "/var/run/nf-aggregator.pid"; // TODO: fix for several aggrs
+    size_t processIndex = 0;
+    // fork new process for every input directory
+    while (++processIndex <= config.inputDirs.size()) {
+        if (processIndex == config.inputDirs.size()) {
+            // stop forking
+            processIndex = 0;
+            break;
+        }
+        pid_t pid = fork();
+        if (pid < 0) {
+            std::cerr << "Unable to fork. Error code " << errno << std::endl;
+            exit(EXIT_FAILURE);
+        }
+        if (pid > 0) {
+            // we are in child process
+            break;
+        }
+    }
+
+    const std::string pidFilename = "/var/run/nf-aggregator" + std::to_string(processIndex) + ".pid";
     std::ofstream pidFile(pidFilename, std::ofstream::out);
     if (pidFile.is_open()) {
         pidFile << getpid();
     }
     pidFile.close();
 
-    logWriter.Initialize(config.logDir, "nf", config.logLevel);
+    logWriter.Initialize(config.logDirs[processIndex], "nf", config.logLevel);
 
     const int OTL_MULTITHREADED_MODE = 1;
     otl_connect::otl_initialize(OTL_MULTITHREADED_MODE);
@@ -117,7 +137,7 @@ int main(int argc, const char* argv[])
 
         logWriter << "Netflow aggregator start";
         logWriter << config.DumpAllSettings();
-        mainLoopCtrl = new MainLoopController(config);
+        mainLoopCtrl = new MainLoopController(config, processIndex);
         mainLoopCtrl->Run();
     }
     catch(otl_exception& ex) {

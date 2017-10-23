@@ -420,18 +420,18 @@ int main ( int argc, char* argv[] )
                 iterFileList->first.c_str(),
                 mcTime,
                 sizeof(mcTime));
-            if (! coFilter.FileFilter (iterFileList->first.c_str())) {
-                coStatKeeper.CountFile(
-                    iterFileList->first.c_str(),
-                    true);
-                if (bShowSkipped) {
-                    printf(
-                        "Data file: %s (%s) - skipped\n",
-                        iterFileList->first.c_str(),
-                        mcTime);
-                }
-                break;
-            }
+//            if (! coFilter.FileFilter (iterFileList->first.c_str())) {
+//                coStatKeeper.CountFile(
+//                    iterFileList->first.c_str(),
+//                    true);
+//                if (bShowSkipped) {
+//                    printf(
+//                        "Data file: %s (%s) - skipped\n",
+//                        iterFileList->first.c_str(),
+//                        mcTime);
+//                }
+//                break;
+//            }
             printf(
                 "Data file: %s (%s)",
                 iterFileList->first.c_str(),
@@ -446,9 +446,7 @@ int main ( int argc, char* argv[] )
                 iterFileList->first.c_str(),
                 false);
             while (coParser.ReadNFPacket());
-            printf(
-                " - completed\n",
-                iterFileList->first.c_str());
+            printf(" - completed\n");
             coFileReader.CloseDataFile();
             coFileWriter.Finalise();
         } while (0);

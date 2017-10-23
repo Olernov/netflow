@@ -30,6 +30,7 @@ void Aggregator::Initialize()
         conditionVars.push_back(new std::condition_variable);
         sessionMaps.push_back(new SessionMap);
     }
+    exceptionFlags.resize(config.threadCount, false);
     for (int i = 0; i < config.threadCount; ++i) {
         workerThreads.push_back(new std::thread(&Aggregator::WorkerThreadFunc, this, i));
     }
@@ -70,9 +71,13 @@ void Aggregator::ProcessQueue(int index)
         DataRecord* dataRecord;
         if (workerQueues[index]->pop(dataRecord)) {
             ProcessDataRecord(dataRecord, index);
+            exceptionFlags[index] = false;
         }
         else {
-            if (!EjectOneIdleSession(index)) {
+            if (EjectOneIdleSession(index)) {
+                exceptionFlags[index] = false;
+            }
+            else {
                 std::unique_lock<std::mutex> lock(*mutexes[index]);
                 conditionVars[index]->wait_for(lock, std::chrono::seconds(3));
             }
@@ -80,6 +85,7 @@ void Aggregator::ProcessQueue(int index)
     }
     catch(const std::exception& ex) {
         // exception is rethrown from Session.
+        exceptionFlags[index] = true;
         logWriter.Write(ex.what(), index);
         alertSender.SendAlert(ex.what());
         dbConnects[index]->reconnect();
@@ -89,7 +95,7 @@ void Aggregator::ProcessQueue(int index)
 
 void Aggregator::ProcessDataRecord(DataRecord* dataRecord, int index)
 {
-    uint32_t contractId;
+    uint32_t contractId = 0;
     if (billingInfo->IsBilledSubscriber(dataRecord->dstIpAddr, contractId)) {
         uint32_t netClassID = billingInfo->GetNetworkClass(dataRecord->srcIpAddr);
         auto eqRange = sessionMaps[index]->equal_range(dataRecord->dstIpAddr);
@@ -160,7 +166,7 @@ void Aggregator::ExportAllSessionsToDB(int index)
                 it.second->ForceExport();
             }
             catch(const std::runtime_error& ex) {
-                logWriter.Write(exceptionText, index);
+                logWriter.Write(ex.what(), index);
                 alertSender.SendAlert(ex.what());
                 dbConnects[index]->reconnect();
             }
@@ -177,6 +183,25 @@ void Aggregator::MapSizeReportIfNeeded(int index)
         logWriter.Write("Sessions count: " + std::to_string(sessionMaps[index]->size()), index);
         lastMapSizeReports[index] = now;
     }
+}
+
+
+bool Aggregator::CanContinueProcessing(std::string &descr)
+{
+    for (int i = 0; i < config.threadCount; ++i) {
+        if (exceptionFlags[i]) {
+            descr = "Exception(s) in thread #" + std::to_string(i);
+            return false;
+        }
+        if (sessionMaps[i]->size() > maxMapSize) {
+            std::stringstream ss;
+            ss << "Session map #" << i << " size (" << sessionMaps[i]->size()
+                    << ") exceeded maximum allowed (" << std::to_string(maxMapSize) << ")";
+            descr = ss.str();
+            return false;
+        }
+    }
+    return true;
 }
 
 

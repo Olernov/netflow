@@ -36,8 +36,8 @@ bool CFilter::SetParameter(
 
 
 bool CFilter::RowFilter(
-	SNFv9Header *p_psoHeader,
-	SNFv9Template *p_psoTemplate,
+    V9Packet *p_psoHeader,
+	FlowTemplate *p_psoTemplate,
     uint8_t *p_pmbBuf)
 {
     uint32_t dwValue;
@@ -78,9 +78,9 @@ bool CFilter::RowFilter(
 			case IDS_FIRST_SWITCHED:
 				if (-1 != m_dwStartTime) {
 					dwFlowTime = ntohl (dwValue);
-					dwSysUpTime = p_psoHeader->dwSysUpTime;
+                    dwSysUpTime = p_psoHeader->sysUpTime;
 					iDelta = (int)(dwFlowTime - dwSysUpTime)/1000;
-					dwUnixTime = p_psoHeader->dwUnixSeconds;
+                    dwUnixTime = p_psoHeader->unixSeconds;
 					if (m_dwStartTime > dwUnixTime + iDelta) {
                         return false;
 					}
@@ -89,9 +89,9 @@ bool CFilter::RowFilter(
 			case IDS_LAST_SWITCHED:
 				if (-1 != m_dwStopTime) {
 					dwFlowTime = ntohl (dwValue);
-					dwSysUpTime = p_psoHeader->dwSysUpTime;
+                    dwSysUpTime = p_psoHeader->sysUpTime;
 					iDelta = (int)(dwFlowTime - dwSysUpTime)/1000;
-					dwUnixTime = p_psoHeader->dwUnixSeconds;
+                    dwUnixTime = p_psoHeader->unixSeconds;
 					if (m_dwStopTime < dwUnixTime + iDelta) {
                         return false;
 					}

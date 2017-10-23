@@ -77,7 +77,6 @@ int CFileReader::CloseDataFile()
 }
 
 
-
 int CFileReader::ReadDataFromFile (size_t stRequestedDataSize)
 {
     size_t readBytes;

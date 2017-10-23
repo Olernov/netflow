@@ -12,16 +12,15 @@ class Config;
 class MainLoopController
 {
 public:
-    MainLoopController(const Config& config);
+    MainLoopController(const Config& config, size_t pind);
 
     void Run();
     void Stop();
 private:
     const Config& config;
+    const size_t processIndex;
     typedef std::vector<filesystem::path> fileList;
     const uint32_t fileReaderChunkSize = 0x1000000;
-    std::string cdrFilesDirectory;
-    std::string cdrExtension;
     const size_t maxAlertMessageLen = 2000;
     std::string lastAlertMessage;
     time_t lastAlertTime;

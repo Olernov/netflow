@@ -1,5 +1,6 @@
 #pragma once
 #include <stdio.h>
+#include <vector>
 #include <string>
 #include <iostream>
 #include <fstream>
@@ -16,9 +17,9 @@ public:
     void ValidateParams();
     std::string DumpAllSettings();
     std::string connectString;
-    std::string inputDir;
-    std::string archiveDir;
-    std::string logDir;
+    std::vector<std::string> inputDirs;
+    std::vector<std::string> archiveDirs;
+    std::vector<std::string> logDirs;
     std::string cdrExtension;
     unsigned short threadCount;
     unsigned long homePlmnID;
@@ -40,4 +41,5 @@ private:
     const int minThreadCount = 1;
     const int maxThreadCount = 32;
     unsigned long ParseULongValue(const std::string& name, const std::string& value);
+    void ValidateDirectory(const std::string& dir);
 };

@@ -69,7 +69,6 @@ void WritePacketsToFiles(int udpSocket)
             std::cerr << "Error #" << errno << " while recv() call." << std::endl;
         }
         else if (recvBytes > 0) {
-            std::cout <<  recvBytes << " bytes received." << std::endl;
             if (outFile == nullptr || (fileSize + recvBytes) > maxFileSize
                     || difftime(time(nullptr), fileStartTime) > maxFileTimeSec) {
                 if (outFile != nullptr) {
