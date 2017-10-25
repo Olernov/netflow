@@ -3,7 +3,6 @@
 #include <signal.h>
 #include "OTL_Header.h"
 #include "DBConnect.h"
-//#include "Utils.h"
 #include "otl_utils.h"
 #include "Session.h"
 #include "Common.h"
@@ -17,40 +16,13 @@ LogWriterOtl logWriter;
 AlertSender alertSender("Netflow aggregator");
 MainLoopController* mainLoopCtrl = nullptr;
 
-void log(short msgType, std::string msgText)
-{
-    std::cout << msgText << std::endl;
-}
-
-
-void ClearTestExportTable(DBConnect& dbConnect)
-{
-    otl_stream dbStream;
-    dbStream.open(1, "call Billing.Netlow.ClearTAggregate()", dbConnect);
-    dbStream.close();
-}
-
-
-void CheckExportedData(DBConnect& dbConnect)
-{
-    otl_stream otlStream;
-    otlStream.open(1, "call Billing.Netlow.CheckTestExport()", dbConnect);
-    otlStream.close();
-}
-
-
-void RunStoredLogicTests(DBConnect& dbConnect)
-{
-    std::cout << "Running stored database logic tests ..." << std::endl;
-    otl_stream otlStream;
-    otlStream.open(1, "call Billing.Netlow.RunAllTests()", dbConnect);
-    otlStream.close();
-}
-
 
 void printUsage()
 {
-    std::cerr << "Usage: " << std::endl << "nf-aggregator <config-file> [-test]" << std::endl;
+    std::cerr << "IRBiS netflow aggregator. (c) Tenet Ltd. 2017" << std::endl
+            << "Usage: " << std::endl << "nf-aggregator <config-file> [-test|-detail]" << std::endl
+            << "     -test runs unit tests and exits" << std::endl
+            << "     -detail runs detailed export of netflow data with no aggregation" << std::endl;
 }
 
 
@@ -71,6 +43,9 @@ int main(int argc, const char* argv[])
     bool runTests = false;
     if (argc > 2 && !strncasecmp(argv[2], "-test", 5)) {
         runTests = true;
+    }
+    if (argc > 2 && !strncasecmp(argv[2], "-detail", 7)) {
+        config.detailedExport = true;
     }
     std::ifstream confFile(confFilename, std::ifstream::in);
     if (!confFile.is_open()) {
@@ -112,7 +87,6 @@ int main(int argc, const char* argv[])
             break;
         }
     }
-
     const std::string pidFilename = "/var/run/nf-aggregator" + std::to_string(processIndex) + ".pid";
     std::ofstream pidFile(pidFilename, std::ofstream::out);
     if (pidFile.is_open()) {
@@ -135,8 +109,9 @@ int main(int argc, const char* argv[])
             exit(EXIT_SUCCESS);
         }
 
-        logWriter << "Netflow aggregator start";
+        logWriter << "Netflow aggregator started";
         logWriter << config.DumpAllSettings();
+        std::cout << "Netflow aggregator started" << std::endl;
         mainLoopCtrl = new MainLoopController(config, processIndex);
         mainLoopCtrl->Run();
     }

@@ -44,10 +44,11 @@ private:
 
     void WorkerThreadFunc(int index);
     void ProcessQueue(int index);
-    void ProcessDataRecord(DataRecord* dataRecord, int index);
+    void AggregateDataRecord(DataRecord* dataRecord, int index);
     void CreateNewSession(DataRecord* dataRecord, uint32_t contractId,
                           uint32_t netClassID, int index);
     void ExportAllSessionsToDB(int index);
     bool EjectOneIdleSession(int index);
     void MapSizeReportIfNeeded(int index);
+    void DetailedExportDataRecord(DataRecord* dataRecord, int index);
 };

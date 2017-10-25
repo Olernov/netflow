@@ -11,7 +11,8 @@ Config::Config() :
     volumeExportThresholdMb(10),
     sessionEjectPeriodMin(30),
     noCdrAlertPeriodMin(15),
-    logLevel(notice)
+    logLevel(notice),
+    detailedExport(false)
 {
 }
 
@@ -173,7 +174,8 @@ std::string Config::DumpAllSettings()
         << sessionEjectPeriodParamName << ": " << std::to_string(sessionEjectPeriodMin)  << std::endl
         << logLevelParamName << ": "
             << (logLevel == error ? "error" : (logLevel == debug ? "debug" : "notice"))  << std::endl
-        << noCdrAlertPeriodParamName << ": " << std::to_string(noCdrAlertPeriodMin);
+        << noCdrAlertPeriodParamName << ": " << std::to_string(noCdrAlertPeriodMin) << std::endl
+        << "detailed export: " << (detailedExport ? "ON" : "OFF") << std::endl;
     return ss.str();
 }
 

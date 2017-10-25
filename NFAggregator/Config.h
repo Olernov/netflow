@@ -27,6 +27,7 @@ public:
     unsigned long sessionEjectPeriodMin;
     unsigned long noCdrAlertPeriodMin;
     LogLevel logLevel;
+    bool detailedExport;
 private:
     const std::string connectStringParamName = "CONNECT_STRING";
     const std::string inputDirParamName = "INPUT_DIR";

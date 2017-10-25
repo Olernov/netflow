@@ -2,6 +2,7 @@
 #include "LogWriterOtl.h"
 #include "Common.h"
 #include "AlertSender.h"
+#include "otl_utils.h"
 
 extern LogWriterOtl logWriter;
 extern AlertSender alertSender;
@@ -70,7 +71,12 @@ void Aggregator::ProcessQueue(int index)
     try {
         DataRecord* dataRecord;
         if (workerQueues[index]->pop(dataRecord)) {
-            ProcessDataRecord(dataRecord, index);
+            if (!config.detailedExport) {
+                AggregateDataRecord(dataRecord, index);
+            }
+            else {
+                DetailedExportDataRecord(dataRecord, index);
+            }
             exceptionFlags[index] = false;
         }
         else {
@@ -93,7 +99,7 @@ void Aggregator::ProcessQueue(int index)
 }
 
 
-void Aggregator::ProcessDataRecord(DataRecord* dataRecord, int index)
+void Aggregator::AggregateDataRecord(DataRecord* dataRecord, int index)
 {
     uint32_t contractId = 0;
     if (billingInfo->IsBilledSubscriber(dataRecord->dstIpAddr, contractId)) {
@@ -182,6 +188,36 @@ void Aggregator::MapSizeReportIfNeeded(int index)
     if (difftime(now, lastMapSizeReports[index]) > mapSizeReportPeriodMin * 60) {
         logWriter.Write("Sessions count: " + std::to_string(sessionMaps[index]->size()), index);
         lastMapSizeReports[index] = now;
+    }
+}
+
+
+void Aggregator::DetailedExportDataRecord(DataRecord* dataRecord, int index)
+{
+    try {
+        otl_stream dbStream;
+        dbStream.open(1,
+                "insert into BILLING.NETFLOW_DETAILS (src_ip, src_port, dst_ip, dst_port,"
+                " first_switched, last_switched, in_bytes, out_bytes)"
+                " values (:src_ip /*bigint*/, :src_port /*long*/, "
+                ":dst_ip /*bigint*/, :dst_port /*long*/,"
+                " :first_switched /*timestamp*/, :last_switched /*timestamp*/,"
+                ":in_bytes /*bigint*/, :out_bytes /*bigint*/)",
+                *dbConnects[index]);
+            dbStream
+                    << static_cast<long long>(dataRecord->srcIpAddr)
+                    << static_cast<long>(dataRecord->srcPort)
+                    << static_cast<long long>(dataRecord->dstIpAddr)
+                    << static_cast<long>(dataRecord->dstPort)
+                    << OTL_Utils::Time_t_to_OTL_datetime(dataRecord->firstSwitched)
+                    << OTL_Utils::Time_t_to_OTL_datetime(dataRecord->lastSwitched)
+                    << static_cast<long long>(dataRecord->inBytes)
+                    << static_cast<long long>(dataRecord->outBytes);
+        dbStream.close();
+    }
+    catch(const otl_exception& ex) {
+        throw std::runtime_error("**** DB ERROR while detailed export ****"
+                                 + crlf + OTL_Utils::OtlExceptionToText(ex));
     }
 }
 
