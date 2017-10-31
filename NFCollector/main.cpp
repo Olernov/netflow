@@ -38,6 +38,15 @@ void SignalHandler(int signum, siginfo_t *info, void *ptr)
     stopFlag = true;
 }
 
+void CloseFile(FILE* outFile, char partialFileName[])
+{
+    if (outFile != nullptr) {
+        fclose(outFile);
+        char finalFileName[1024];
+        sprintf(finalFileName, "%s.dat", partialFileName);
+        rename(partialFileName, finalFileName);
+    }
+}
 
 FILE* OpenNewFile(time_t* fileStartTime, char* filename)
 {
@@ -71,20 +80,15 @@ void WritePacketsToFiles(int udpSocket)
         else if (recvBytes > 0) {
             if (outFile == nullptr || (fileSize + recvBytes) > maxFileSize
                     || difftime(time(nullptr), fileStartTime) > maxFileTimeSec) {
-                if (outFile != nullptr) {
-                    fclose(outFile);
-                    char finalFileName[1024];
-                    sprintf(finalFileName, "%s.dat", partialFileName);
-                    rename(partialFileName, finalFileName);
-                }
+                CloseFile(outFile, partialFileName);
                 outFile = OpenNewFile(&fileStartTime, partialFileName);
-            }
-            if (outFile == nullptr) {
-                std::cerr << "Unable to open file " << partialFileName << " for writing." << std::endl;
-                continue;
-            }
-            else {
-                fileSize = 0;
+                if (outFile == nullptr) {
+                    std::cerr << "Unable to open file " << partialFileName << " for writing." << std::endl;
+                    continue;
+                }
+                else {
+                    fileSize = 0;
+                }
             }
             size_t writtenBytes = fwrite(recvBuf, 1, recvBytes, outFile);
             if (writtenBytes < recvBytes) {
@@ -94,6 +98,7 @@ void WritePacketsToFiles(int udpSocket)
             fileSize += writtenBytes;
         }
     }
+    CloseFile(outFile, partialFileName);
 }
 
 
