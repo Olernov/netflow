@@ -19,20 +19,20 @@ Aggregator::Aggregator(const Config& config, BillingInfo *bi) :
 void Aggregator::Initialize()
 {
     time_t now = time(nullptr);
-    lastMapSizeReports.resize(config.threadCount, now);
-    for (int i = 0; i < config.threadCount; ++i) {
+    lastMapSizeReports.resize(config.dbConnectionsCount, now);
+    for (int i = 0; i < config.dbConnectionsCount; ++i) {
         DBConnect* dbConnect = new DBConnect;
         dbConnects.push_back(dbConnect);
         dbConnect->rlogon(config.connectString.c_str());
     }
-    for (int i = 0; i < config.threadCount; ++i) {
+    for (int i = 0; i < config.dbConnectionsCount; ++i) {
         workerQueues.push_back(new WorkerQueue(workerQueueSize));
         mutexes.push_back(new std::mutex);
         conditionVars.push_back(new std::condition_variable);
         sessionMaps.push_back(new SessionMap);
     }
-    exceptionFlags.resize(config.threadCount, false);
-    for (int i = 0; i < config.threadCount; ++i) {
+    exceptionFlags.resize(config.dbConnectionsCount, false);
+    for (int i = 0; i < config.dbConnectionsCount; ++i) {
         workerThreads.push_back(new std::thread(&Aggregator::WorkerThreadFunc, this, i));
     }
 }
@@ -40,7 +40,7 @@ void Aggregator::Initialize()
 
 void Aggregator::AddDataRecord(DataRecord* dataRecord)
 {
-    int workerIndex = dataRecord->dstIpAddr % config.threadCount;
+    int workerIndex = dataRecord->dstIpAddr % config.dbConnectionsCount;
     bool queueIsFull = false;
     while (!workerQueues[workerIndex]->push(dataRecord)) {
         if (!queueIsFull) {
@@ -140,7 +140,8 @@ void Aggregator::CreateNewSession(DataRecord* dataRecord, uint32_t contractId, u
                         dataRecord->firstSwitched,
                         dataRecord->lastSwitched,
                         dataRecord->inBytes,
-                        config.volumeExportThresholdMb,
+                        config.exportThresholdMb,
+                        config.exportThresholdMin,
                         config.sessionEjectPeriodMin,
                         dbConnects[index]))));
 }
@@ -224,7 +225,7 @@ void Aggregator::DetailedExportDataRecord(DataRecord* dataRecord, int index)
 
 bool Aggregator::CanContinueProcessing(std::string &descr)
 {
-    for (int i = 0; i < config.threadCount; ++i) {
+    for (int i = 0; i < config.dbConnectionsCount; ++i) {
         if (exceptionFlags[i]) {
             descr = "Exception(s) in thread #" + std::to_string(i);
             return false;

@@ -11,7 +11,8 @@ public:
         time_t firstSwitched,
         time_t lastSwitched,
         uint64_t inBytes,
-        long volumeExportThresholdMb,
+        long exportThresholdMb,
+        long exportThresholdMin,
         long sessionEjectPeriodMin,
         DBConnect* db);
     uint32_t ipAddress;
@@ -30,7 +31,8 @@ public:
         { return inBytesAggregated>0 || lastSwitched>firstSwitched; }
 private:
     const unsigned long megabyteSizeInBytes = 1024*1024;
-    const unsigned long volumeExportThresholdMb;
+    const unsigned long exportThresholdMb;
+    const unsigned long exportThresholdMin;
     const unsigned long sessionEjectPeriodMin;
     const long defaultExportedRecordStatus = 0;
 

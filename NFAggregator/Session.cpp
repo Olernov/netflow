@@ -11,7 +11,8 @@ Session::Session(uint32_t ipAddress,
         time_t firstSwitched,
         time_t lastSwitched,
         uint64_t inBytes,
-        long volumeExportThresholdMb,
+        long exportThresholdMb,
+        long exportThresholdMin,
         long sessionEjectPeriodMin,
         DBConnect *db) :
     ipAddress(ipAddress),
@@ -23,7 +24,8 @@ Session::Session(uint32_t ipAddress,
     inBytesExported(0),
     lastUpdateTime(time(nullptr)),
     lastExportTime(notInitialized),
-    volumeExportThresholdMb(volumeExportThresholdMb),
+    exportThresholdMb(exportThresholdMb),
+    exportThresholdMin(exportThresholdMin),
     sessionEjectPeriodMin(sessionEjectPeriodMin),
     dbConnect(db)
 {
@@ -47,7 +49,8 @@ void Session::UpdateData(uint64_t inBytesIncrease, time_t newFirstSwitched, time
 
 void Session::ExportIfNecessary()
 {
-    if (inBytesAggregated >= volumeExportThresholdMb * megabyteSizeInBytes) {
+    if (inBytesAggregated >= exportThresholdMb * megabyteSizeInBytes ||
+            difftime(lastSwitched, firstSwitched) >= exportThresholdMin*60) {
         ForceExport();
     }
 }

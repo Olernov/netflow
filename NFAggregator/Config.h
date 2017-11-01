@@ -21,9 +21,10 @@ public:
     std::vector<std::string> archiveDirs;
     std::vector<std::string> logDirs;
     std::string cdrExtension;
-    unsigned short threadCount;
+    unsigned short dbConnectionsCount;
     unsigned long homePlmnID;
-    unsigned long volumeExportThresholdMb;
+    unsigned long exportThresholdMb;
+    unsigned long exportThresholdMin;
     unsigned long sessionEjectPeriodMin;
     unsigned long noCdrAlertPeriodMin;
     LogLevel logLevel;
@@ -34,8 +35,9 @@ private:
     const std::string archiveDirParamName = "ARCHIVE_DIR";
     const std::string logDirParamName = "LOG_DIR";
     const std::string cdrExtensionParamName = "CDR_FILES_EXTENSION";
-    const std::string threadCountParamName = "THREAD_COUNT";
-    const std::string volumeExportThresholdMbParamName = "EXPORT_THRESHOLD_MB";
+    const std::string dbConectionsCountParamName = "DB_CONNECTIONS_COUNT";
+    const std::string exportThresholdMbParamName = "EXPORT_THRESHOLD_MB";
+    const std::string exportThresholdMinParamName = "EXPORT_THRESHOLD_MIN";
     const std::string sessionEjectPeriodParamName = "SESSION_EJECT_PERIOD";
     const std::string noCdrAlertPeriodParamName = "NO_CDR_ALERT_PERIOD_MIN";
     const std::string logLevelParamName = "LOG_LEVEL";

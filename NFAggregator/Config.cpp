@@ -7,8 +7,9 @@ using namespace boost;
 
 Config::Config() :
     cdrExtension(".nas"),
-    threadCount(8),
-    volumeExportThresholdMb(10),
+    dbConnectionsCount(8),
+    exportThresholdMb(10),
+    exportThresholdMin(60),
     sessionEjectPeriodMin(30),
     noCdrAlertPeriodMin(15),
     logLevel(notice),
@@ -70,11 +71,14 @@ void Config::ReadConfigFile(std::ifstream& configStream)
         else if (option_name == cdrExtensionParamName) {
             cdrExtension = option_value;
         }
-        else if (option_name == threadCountParamName) {
-            threadCount = ParseULongValue(option_name, option_value);
+        else if (option_name == dbConectionsCountParamName) {
+            dbConnectionsCount = ParseULongValue(option_name, option_value);
         }
-        else if (option_name == volumeExportThresholdMbParamName) {
-            volumeExportThresholdMb = ParseULongValue(option_name, option_value);
+        else if (option_name == exportThresholdMbParamName) {
+            exportThresholdMb = ParseULongValue(option_name, option_value);
+        }
+        else if (option_name == exportThresholdMinParamName) {
+            exportThresholdMin = ParseULongValue(option_name, option_value);
         }
         else if (option_name == sessionEjectPeriodParamName) {
             sessionEjectPeriodMin = ParseULongValue(option_name, option_value);
@@ -138,8 +142,8 @@ void Config::ValidateParams()
         ValidateDirectory(d);
     }
 
-    if (!(threadCount >= minThreadCount && threadCount <= maxThreadCount)) {
-        throw std::runtime_error(threadCountParamName + " must have value from " +
+    if (!(dbConnectionsCount >= minThreadCount && dbConnectionsCount <= maxThreadCount)) {
+        throw std::runtime_error(dbConectionsCountParamName + " must have value from " +
                                  std::to_string(minThreadCount) + " to " + std::to_string(maxThreadCount));
     }
 }
@@ -170,7 +174,8 @@ std::string Config::DumpAllSettings()
         ss << logDirParamName << ": " << d << std::endl;
     }
     ss  << cdrExtensionParamName << ": " << cdrExtension << std::endl
-        << volumeExportThresholdMbParamName << ": " << std::to_string(volumeExportThresholdMb)  << std::endl
+        << exportThresholdMbParamName << ": " << std::to_string(exportThresholdMb) << std::endl
+        << exportThresholdMinParamName << ": " << std::to_string(exportThresholdMin) << std::endl
         << sessionEjectPeriodParamName << ": " << std::to_string(sessionEjectPeriodMin)  << std::endl
         << logLevelParamName << ": "
             << (logLevel == error ? "error" : (logLevel == debug ? "debug" : "notice"))  << std::endl
