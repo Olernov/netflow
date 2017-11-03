@@ -40,15 +40,21 @@ void Aggregator::Initialize()
 
 void Aggregator::AddDataRecord(DataRecord* dataRecord)
 {
-    int workerIndex = dataRecord->dstIpAddr % config.dbConnectionsCount;
+    int initialWorkerIndex = dataRecord->dstIpAddr % config.dbConnectionsCount;
+    int workerIndex = initialWorkerIndex;
     bool queueIsFull = false;
+    // find first free queue to insert data recrod
     while (!workerQueues[workerIndex]->push(dataRecord)) {
-        if (!queueIsFull) {
-            logWriter.Write("Worker queue max size reached (" + std::to_string(workerQueueSize)
-                            + "). Processing postponed", workerIndex, debug);
+        workerIndex = (workerIndex + 1) % config.dbConnectionsCount;
+        if (workerIndex == initialWorkerIndex) {
+            // round trip is over
+            if (!queueIsFull) {
+                logWriter.Write("All worker queues are full. Processing postponed", workerIndex,
+                                debug);
+            }
             queueIsFull = true;
+            std::this_thread::sleep_for(std::chrono::seconds(1));
         }
-        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     conditionVars[workerIndex]->notify_one();
 }
