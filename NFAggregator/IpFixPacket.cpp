@@ -32,7 +32,9 @@ bool IpFixPacket::ParseHeader()
 bool IpFixPacket::ParseBody()
 {
     while(bytesProcessed < headerInfo.length) {
-        ParseFlowSet();
+        if (ParseFlowSet() < 0) {
+            return false;
+        }
     }
     return true;
 }
